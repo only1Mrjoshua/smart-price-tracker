@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Dashboard • Smart Price Tracker</title>
+    <link rel="stylesheet" href="css/dashboard.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="nav">
+        <div class="brand">Dashboard</div>
+
+        <!-- Desktop Navigation -->
+        <div class="desktop-nav">
+          <a id="adminLink" href="admin.html" style="display: none">Admin</a>
+          <span class="badge" id="who">—</span>
+          <button class="secondary" id="logoutBtn">Logout</button>
+        </div>
+
+        <!-- Hamburger Menu Toggle (Visible on Mobile) -->
+        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="h1" style="font-size: 22px">
+            Track a product (Direct URL)
+          </div>
+          <p class="p">
+            Paste a product URL and pick the platform. This is the most reliable
+            mode.
+          </p>
+
+          <form id="trackForm">
+            <select id="platform">
+              <option value="jumia">Jumia</option>
+              <option value="konga">Konga</option>
+              <option value="amazon">Amazon</option>
+              <option value="ebay">eBay</option>
+            </select>
+
+            <input id="url" placeholder="https://..." required />
+
+            <button type="submit">Track</button>
+          </form>
+
+          <div class="small">
+            If a platform blocks requests or HTML changes, status may become
+            <b>blocked</b>. The system will retry later.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="h1" style="font-size: 22px">Notifications</div>
+          <div id="notifBox"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="h1" style="font-size: 22px">Tracked products</div>
+
+        <!-- ✅ ONE SCROLL SYSTEM (same as admin) -->
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Current price</th>
+                <th>Status</th>
+                <th>Last checked</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="productsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+
+    <!-- Mobile Menu Sidebar -->
+    <nav class="mobile-menu" id="mobileMenu">
+      <div class="mobile-menu-header">
+        <div class="brand">Smart Price Tracker</div>
+        <button class="close-menu" id="closeMenu" aria-label="Close menu">
+          ×
+        </button>
+      </div>
+
+      <div class="mobile-user-info">
+        <div id="mobileWho">Loading...</div>
+      </div>
+
+      <div class="mobile-nav-links">
+        <a href="dashboard.html" class="active">
+          <span>📊</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="admin.html" id="mobileAdminLink" style="display: none">
+          <span>👑</span>
+          <span>Admin Dashboard</span>
+        </a>
+      </div>
+
+      <div class="mobile-menu-footer">
+        <button id="mobileLogoutBtn" class="button secondary">Logout</button>
+      </div>
+    </nav>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+  </body>
+</html>
