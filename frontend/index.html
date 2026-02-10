@@ -10,10 +10,19 @@
     <div class="container">
       <div class="nav">
         <div class="brand">Smart Price Tracker</div>
-        <div class="row">
+
+        <!-- Desktop Navigation -->
+        <div class="desktop-nav">
           <a href="login.html">Login</a>
           <a href="register.html">Register</a>
         </div>
+
+        <!-- Hamburger Menu Toggle (Visible on Mobile) -->
+        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
       </div>
 
       <div class="card">
@@ -34,5 +43,41 @@
         </div>
       </div>
     </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+
+    <!-- Mobile Menu Sidebar -->
+    <nav class="mobile-menu" id="mobileMenu">
+      <div class="mobile-menu-header">
+        <div class="brand">Smart Price Tracker</div>
+        <button class="close-menu" id="closeMenu" aria-label="Close menu">
+          ×
+        </button>
+      </div>
+
+      <div class="mobile-nav-links">
+        <a href="index.html" class="active">
+          <span>🏠</span>
+          <span>Home</span>
+        </a>
+        <a href="login.html">
+          <span>🔐</span>
+          <span>Login</span>
+        </a>
+        <a href="register.html">
+          <span>📝</span>
+          <span>Register</span>
+        </a>
+      </div>
+
+      <div class="mobile-menu-footer">
+        <div class="small">
+          Smart Price Tracker - Track prices across multiple platforms
+        </div>
+      </div>
+    </nav>
+
+    <script src="js/mobile-menu.js"></script>
   </body>
 </html>

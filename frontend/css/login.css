@@ -741,3 +741,95 @@ button:disabled.button--loading::after {
     border-bottom: 1px solid var(--color-gray-dark);
   }
 }
+
+/* ==========================================================================
+   NAVIGATION HOME LINK WITH ICON
+   ========================================================================== */
+.home-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: var(--space-xs) var(--space-sm) !important;
+}
+
+.home-icon {
+  display: none;
+  width: 20px;
+  height: 20px;
+  stroke: var(--color-gray-dark);
+  transition: stroke var(--transition-fast);
+}
+
+.home-link:hover .home-icon {
+  stroke: var(--color-secondary-accent);
+}
+
+/* ==========================================================================
+   MOBILE NAVIGATION LAYOUT
+   ========================================================================== */
+@media (max-width: 768px) {
+  .nav {
+    flex-direction: row !important; /* Override previous mobile style */
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md) 0;
+    margin-bottom: var(--space-xl);
+  }
+  
+  .nav .brand {
+    font-size: var(--text-lg);
+    margin-bottom: 0;
+    text-align: left;
+    flex: 1;
+  }
+  
+  .nav .row {
+    width: auto;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+  
+  .home-link {
+    padding: var(--space-xs) !important;
+    border-radius: var(--radius-full);
+    width: 40px;
+    height: 40px;
+    justify-content: center;
+    background-color: rgba(82, 133, 232, 0.05);
+  }
+  
+  .home-text {
+    display: none;
+  }
+  
+  .home-icon {
+    display: block;
+  }
+  
+  .home-link:hover {
+    background-color: rgba(82, 133, 232, 0.1);
+  }
+  
+  .home-link:focus-visible {
+    outline: 2px solid var(--color-secondary-accent);
+    outline-offset: 2px;
+  }
+}
+
+/* Extra small mobile adjustments */
+@media (max-width: 480px) {
+  .nav .brand {
+    font-size: var(--text-base);
+    max-width: 70%; /* Prevent brand name from pushing icon off screen */
+  }
+  
+  .home-link {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .home-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
