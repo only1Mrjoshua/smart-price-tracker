@@ -766,3 +766,7 @@ hr {
     margin-bottom: var(--space-xl);
   }
 }
+
+.small{
+  text-align: center;
+}

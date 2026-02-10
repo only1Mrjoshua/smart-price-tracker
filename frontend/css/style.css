@@ -600,3 +600,7 @@ hr {
     padding: var(--space-lg) var(--space-md);
   }
 }
+
+#closeMenu {
+  display: none;
+}
