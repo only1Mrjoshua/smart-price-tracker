@@ -886,3 +886,7 @@ button.secondary:hover:not(:disabled),
 #closeMenu {
   display: none;
 }
+
+#url {
+  font-size: 16px;
+}
