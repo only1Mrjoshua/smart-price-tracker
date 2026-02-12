@@ -833,3 +833,8 @@ button:disabled.button--loading::after {
     height: 18px;
   }
 }
+
+.nav .row {
+  margin-bottom: 0;   /* kills the extra margin that breaks centering */
+  flex-wrap: nowrap;  /* optional: prevents weird wrapping */
+}

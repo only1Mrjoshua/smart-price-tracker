@@ -124,6 +124,7 @@ p {
   font-size: var(--text-sm);
   color: var(--color-gray-medium);
   line-height: 1.5;
+  text-align: center;
 }
 
 b, strong {
@@ -765,4 +766,9 @@ hr {
     margin-top: var(--space-md);
     margin-bottom: var(--space-xl);
   }
+}
+
+.nav .row {
+  margin-bottom: 0;   /* kills the extra margin that breaks centering */
+  flex-wrap: nowrap;  /* optional: prevents weird wrapping */
 }
