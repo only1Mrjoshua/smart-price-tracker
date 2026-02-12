@@ -838,3 +838,52 @@ button:disabled.button--loading::after {
   margin-bottom: 0;   /* kills the extra margin that breaks centering */
   flex-wrap: nowrap;  /* optional: prevents weird wrapping */
 }
+
+/* ==========================================================================
+   SPINNER LOADING ANIMATION - LOGIN PAGE
+   ========================================================================== */
+.grid {
+  position: relative;
+}
+
+.spinner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(2px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  z-index: var(--z-modal);
+}
+
+.spinner-overlay.active {
+  display: flex;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(82, 133, 232, 0.2);
+  border-radius: 50%;
+  border-top-color: var(--color-secondary-accent);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+    border: 4px solid var(--color-secondary-accent);
+  }
+}

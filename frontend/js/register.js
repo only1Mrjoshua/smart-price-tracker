@@ -6,23 +6,39 @@ document.addEventListener('DOMContentLoaded', () => {
   const nameInput = document.getElementById('name');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
-  const termsCheckbox = document.getElementById('terms');
-  const registerButton = document.getElementById('register-button');
-  const spinnerOverlay = document.getElementById('spinner-overlay');
-  const errorContainer = document.getElementById('form-error');
+  const submitButton = form.querySelector('button[type="submit"]');
+  
+  // Create spinner overlay if it doesn't exist
+  let spinnerOverlay = document.getElementById('spinner-overlay');
+  if (!spinnerOverlay) {
+    spinnerOverlay = document.createElement('div');
+    spinnerOverlay.id = 'spinner-overlay';
+    spinnerOverlay.className = 'spinner-overlay';
+    spinnerOverlay.setAttribute('aria-hidden', 'true');
+    
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    spinnerOverlay.appendChild(spinner);
+    
+    form.style.position = 'relative';
+    form.appendChild(spinnerOverlay);
+  }
+  
+  // Create error container if it doesn't exist
+  let errorContainer = document.getElementById('form-error');
+  if (!errorContainer) {
+    errorContainer = document.createElement('div');
+    errorContainer.id = 'form-error';
+    errorContainer.className = 'form-error';
+    errorContainer.style.display = 'none';
+    form.insertBefore(errorContainer, form.firstChild);
+  }
 
-  // Preserve existing validation and registration flow
   // Simulate API registration - replace with real fetch when ready
-  const simulateRegistration = async (name, email, password, terms) => {
+  const simulateRegistration = async (name, email, password) => {
     // Fake API call - mimics network delay
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        // Demo validation - keep existing behavior
-        if (!terms) {
-          reject(new Error('You must agree to the Terms of Service'));
-          return;
-        }
-        
         if (name && email && password) {
           // Basic validation for demo
           if (password.length < 6) {
@@ -45,25 +61,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Show spinner and disable form
   const showLoading = () => {
-    registerButton.disabled = true;
+    submitButton.disabled = true;
     spinnerOverlay.classList.add('active');
     spinnerOverlay.setAttribute('aria-hidden', 'false');
     nameInput.disabled = true;
     emailInput.disabled = true;
     passwordInput.disabled = true;
-    if (termsCheckbox) termsCheckbox.disabled = true;
     hideError(); // Clear any previous errors
   };
 
   // Hide spinner and re-enable form
   const hideLoading = () => {
-    registerButton.disabled = false;
+    submitButton.disabled = false;
     spinnerOverlay.classList.remove('active');
     spinnerOverlay.setAttribute('aria-hidden', 'true');
     nameInput.disabled = false;
     emailInput.disabled = false;
     passwordInput.disabled = false;
-    if (termsCheckbox) termsCheckbox.disabled = false;
   };
 
   // Display error message
@@ -100,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const name = nameInput.value.trim();
     const email = emailInput.value.trim();
     const password = passwordInput.value;
-    const terms = termsCheckbox ? termsCheckbox.checked : true; // Default to true if checkbox doesn't exist
 
     if (!name || !email || !password) {
       showError('Please fill in all fields');
@@ -120,19 +133,17 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Terms agreement validation
-    if (termsCheckbox && !termsCheckbox.checked) {
-      showError('You must agree to the Terms of Service');
-      return;
-    }
-
     // Start loading
     showLoading();
 
     try {
-      // Call register function from auth.js (preserved)
-      // This integrates with your existing auth system
-      await register(name, email, password);
+      // Check if register function exists (from auth.js)
+      if (typeof register === 'function') {
+        await register(name, email, password);
+      } else {
+        // Fallback to simulateRegistration if register doesn't exist
+        await simulateRegistration(name, email, password);
+      }
       
       // If successful, redirect to dashboard
       window.location.href = 'dashboard.html';
@@ -146,11 +157,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Optional: Add password strength indicator integration
-  // This can be expanded later with the existing CSS classes
   if (passwordInput) {
     passwordInput.addEventListener('input', () => {
       // Placeholder for future password strength feature
-      // The CSS classes are already prepared
     });
   }
 });

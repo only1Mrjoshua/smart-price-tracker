@@ -5,28 +5,49 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('form');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
-  const rememberCheckbox = document.getElementById('remember');
-  const loginButton = document.getElementById('login-button');
-  const spinnerOverlay = document.getElementById('spinner-overlay');
-  const errorContainer = document.getElementById('form-error');
+  const submitButton = form.querySelector('button[type="submit"]');
+  
+  // Create spinner overlay if it doesn't exist
+  let spinnerOverlay = document.getElementById('spinner-overlay');
+  if (!spinnerOverlay) {
+    spinnerOverlay = document.createElement('div');
+    spinnerOverlay.id = 'spinner-overlay';
+    spinnerOverlay.className = 'spinner-overlay';
+    spinnerOverlay.setAttribute('aria-hidden', 'true');
+    
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    spinnerOverlay.appendChild(spinner);
+    
+    form.style.position = 'relative';
+    form.appendChild(spinnerOverlay);
+  }
+  
+  // Create error container if it doesn't exist
+  let errorContainer = document.getElementById('form-error');
+  if (!errorContainer) {
+    errorContainer = document.createElement('div');
+    errorContainer.id = 'form-error';
+    errorContainer.className = 'form-error';
+    errorContainer.style.display = 'none';
+    form.insertBefore(errorContainer, form.firstChild);
+  }
 
-  // Preserve existing validation and login flow
   // Simulate API delay - replace with real fetch when ready
-  const simulateLogin = async (email, password, remember) => {
+  const simulateLogin = async (email, password) => {
     // Fake API call - mimics network delay
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         // Demo credentials - keep existing behavior
         if (email && password) {
-          // Store remember me preference if needed
-          if (remember) {
-            localStorage.setItem('rememberEmail', email);
+          // Demo validation - you can change this logic
+          if (email === 'demo@example.com' && password === 'password123') {
+            resolve({ success: true, token: 'fake-jwt-token' });
           } else {
-            localStorage.removeItem('rememberEmail');
+            reject(new Error('Invalid email or password'));
           }
-          resolve({ success: true, token: 'fake-jwt-token' });
         } else {
-          reject(new Error('Invalid credentials'));
+          reject(new Error('Please enter both email and password'));
         }
       }, 1500); // 1.5s spinner display for demo
     });
@@ -34,23 +55,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Show spinner and disable form
   const showLoading = () => {
-    loginButton.disabled = true;
+    submitButton.disabled = true;
     spinnerOverlay.classList.add('active');
     spinnerOverlay.setAttribute('aria-hidden', 'false');
     emailInput.disabled = true;
     passwordInput.disabled = true;
-    if (rememberCheckbox) rememberCheckbox.disabled = true;
     hideError(); // Clear any previous errors
   };
 
   // Hide spinner and re-enable form
   const hideLoading = () => {
-    loginButton.disabled = false;
+    submitButton.disabled = false;
     spinnerOverlay.classList.remove('active');
     spinnerOverlay.setAttribute('aria-hidden', 'true');
     emailInput.disabled = false;
     passwordInput.disabled = false;
-    if (rememberCheckbox) rememberCheckbox.disabled = false;
   };
 
   // Display error message
@@ -58,6 +77,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (errorContainer) {
       errorContainer.textContent = message;
       errorContainer.style.display = 'block';
+      
+      // Auto-hide error after 5 seconds
+      setTimeout(() => {
+        if (errorContainer) {
+          errorContainer.style.display = 'none';
+        }
+      }, 5000);
     } else {
       // Fallback to alert if no container
       alert(message);
@@ -79,10 +105,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Basic validation
     const email = emailInput.value.trim();
     const password = passwordInput.value;
-    const remember = rememberCheckbox ? rememberCheckbox.checked : false;
 
     if (!email || !password) {
       showError('Please fill in all fields');
+      return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showError('Please enter a valid email address');
       return;
     }
 
@@ -90,11 +122,15 @@ document.addEventListener('DOMContentLoaded', () => {
     showLoading();
 
     try {
-      // Call login function from auth.js (preserved)
-      // This integrates with your existing auth system
-      await login(email, password, remember);
+      // Check if login function exists from auth.js
+      if (typeof login === 'function') {
+        await login(email, password);
+      } else {
+        // Fallback to simulateLogin if login doesn't exist
+        await simulateLogin(email, password);
+      }
       
-      // If successful, redirect (handled in auth.js or here)
+      // If successful, redirect to dashboard
       window.location.href = 'dashboard.html';
     } catch (err) {
       // Show error message
@@ -105,10 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Optional: Pre-fill remember me email
-  const savedEmail = localStorage.getItem('rememberEmail');
-  if (savedEmail && emailInput && rememberCheckbox) {
-    emailInput.value = savedEmail;
-    rememberCheckbox.checked = true;
-  }
+  // Optional: Clear error when user starts typing
+  [emailInput, passwordInput].forEach(input => {
+    input.addEventListener('input', () => {
+      hideError();
+    });
+  });
 });
