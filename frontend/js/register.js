@@ -1,5 +1,5 @@
 // js/register.js
-// Handles registration form submission with spinner loading animation
+// Handles registration form submission with spinner loading animation and toast notifications
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('form');
@@ -23,16 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
     form.style.position = 'relative';
     form.appendChild(spinnerOverlay);
   }
-  
-  // Create error container if it doesn't exist
-  let errorContainer = document.getElementById('form-error');
-  if (!errorContainer) {
-    errorContainer = document.createElement('div');
-    errorContainer.id = 'form-error';
-    errorContainer.className = 'form-error';
-    errorContainer.style.display = 'none';
-    form.insertBefore(errorContainer, form.firstChild);
-  }
 
   // Simulate API registration - replace with real fetch when ready
   const simulateRegistration = async (name, email, password) => {
@@ -48,6 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
           
           if (!email.includes('@')) {
             reject(new Error('Please enter a valid email address'));
+            return;
+          }
+          
+          // Check if email already exists (demo)
+          if (email === 'demo@example.com') {
+            reject(new Error('Email already registered'));
             return;
           }
           
@@ -67,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
     nameInput.disabled = true;
     emailInput.disabled = true;
     passwordInput.disabled = true;
-    hideError(); // Clear any previous errors
   };
 
   // Hide spinner and re-enable form
@@ -80,32 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
     passwordInput.disabled = false;
   };
 
-  // Display error message
-  const showError = (message) => {
-    if (errorContainer) {
-      errorContainer.textContent = message;
-      errorContainer.style.display = 'block';
-      
-      // Auto-hide error after 5 seconds
-      setTimeout(() => {
-        if (errorContainer) {
-          errorContainer.style.display = 'none';
-        }
-      }, 5000);
-    } else {
-      // Fallback to alert if no container
-      alert(message);
-    }
-  };
-
-  // Hide error message
-  const hideError = () => {
-    if (errorContainer) {
-      errorContainer.style.display = 'none';
-      errorContainer.textContent = '';
-    }
-  };
-
   // Form submit handler
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -116,20 +85,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const password = passwordInput.value;
 
     if (!name || !email || !password) {
-      showError('Please fill in all fields');
+      toast.error('Please fill in all fields', { 
+        duration: 4000,
+        showProgress: true 
+      });
       return;
     }
 
     // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      showError('Please enter a valid email address');
+      toast.error('Please enter a valid email address', { 
+        duration: 4000,
+        showProgress: true 
+      });
       return;
     }
 
-    // Password length validation (can be customized)
+    // Password length validation
     if (password.length < 6) {
-      showError('Password must be at least 6 characters');
+      toast.warning('Password must be at least 6 characters for security', { 
+        duration: 5000,
+        showProgress: true 
+      });
       return;
     }
 
@@ -145,21 +123,71 @@ document.addEventListener('DOMContentLoaded', () => {
         await simulateRegistration(name, email, password);
       }
       
+      // Show success message before redirect
+      toast.success('Account created successfully! Redirecting to dashboard...', { 
+        duration: 2500,
+        showProgress: true
+      });
+      
       // If successful, redirect to dashboard
-      window.location.href = 'dashboard.html';
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 2000);
+      
     } catch (err) {
-      // Show error message
-      showError(err.message || 'Registration failed. Please try again.');
+      // Show error message as toast
+      toast.error(err.message || 'Registration failed. Please try again.', { 
+        duration: 5000,
+        showProgress: true
+      });
     } finally {
       // Always hide spinner
       hideLoading();
     }
   });
 
+  // Optional: Show welcome message on page load
+  setTimeout(() => {
+    toast.info('Join Smart Price Tracker today!', { 
+      duration: 4000,
+      showProgress: true
+    });
+  }, 500);
+
+  // Remove error styling on input
+  [nameInput, emailInput, passwordInput].forEach(input => {
+    input.addEventListener('input', () => {
+      input.classList.remove('error');
+    });
+  });
+
   // Optional: Add password strength indicator integration
   if (passwordInput) {
     passwordInput.addEventListener('input', () => {
-      // Placeholder for future password strength feature
+      const password = passwordInput.value;
+      
+      // Simple password strength indicator
+      if (password.length === 0) {
+        // No indicator needed
+      } else if (password.length < 6) {
+        toast.warning('Weak password - minimum 6 characters required', { 
+          duration: 2000,
+          showProgress: false,
+          showClose: true
+        });
+      } else if (password.length < 10) {
+        toast.info('Medium password strength', { 
+          duration: 2000,
+          showProgress: false,
+          showClose: true
+        });
+      } else {
+        toast.success('Strong password!', { 
+          duration: 2000,
+          showProgress: false,
+          showClose: true
+        });
+      }
     });
   }
 });

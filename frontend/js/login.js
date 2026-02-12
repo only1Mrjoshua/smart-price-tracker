@@ -1,5 +1,5 @@
 // js/login.js
-// Handles login form submission with spinner loading animation
+// Handles login form submission with spinner loading animation and toast notifications
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('form');
@@ -21,16 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     form.style.position = 'relative';
     form.appendChild(spinnerOverlay);
-  }
-  
-  // Create error container if it doesn't exist
-  let errorContainer = document.getElementById('form-error');
-  if (!errorContainer) {
-    errorContainer = document.createElement('div');
-    errorContainer.id = 'form-error';
-    errorContainer.className = 'form-error';
-    errorContainer.style.display = 'none';
-    form.insertBefore(errorContainer, form.firstChild);
   }
 
   // Simulate API delay - replace with real fetch when ready
@@ -60,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
     spinnerOverlay.setAttribute('aria-hidden', 'false');
     emailInput.disabled = true;
     passwordInput.disabled = true;
-    hideError(); // Clear any previous errors
   };
 
   // Hide spinner and re-enable form
@@ -72,32 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
     passwordInput.disabled = false;
   };
 
-  // Display error message
-  const showError = (message) => {
-    if (errorContainer) {
-      errorContainer.textContent = message;
-      errorContainer.style.display = 'block';
-      
-      // Auto-hide error after 5 seconds
-      setTimeout(() => {
-        if (errorContainer) {
-          errorContainer.style.display = 'none';
-        }
-      }, 5000);
-    } else {
-      // Fallback to alert if no container
-      alert(message);
-    }
-  };
-
-  // Hide error message
-  const hideError = () => {
-    if (errorContainer) {
-      errorContainer.style.display = 'none';
-      errorContainer.textContent = '';
-    }
-  };
-
   // Form submit handler
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -107,14 +70,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const password = passwordInput.value;
 
     if (!email || !password) {
-      showError('Please fill in all fields');
+      toast.error('Please fill in all fields', { 
+        duration: 4000,
+        showProgress: true 
+      });
       return;
     }
 
     // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      showError('Please enter a valid email address');
+      toast.error('Please enter a valid email address', { 
+        duration: 4000,
+        showProgress: true 
+      });
       return;
     }
 
@@ -130,21 +99,41 @@ document.addEventListener('DOMContentLoaded', () => {
         await simulateLogin(email, password);
       }
       
+      // Show success message before redirect
+      toast.success('Login successful! Redirecting to dashboard...', { 
+        duration: 2000,
+        showProgress: true
+      });
+      
       // If successful, redirect to dashboard
-      window.location.href = 'dashboard.html';
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 1500);
+      
     } catch (err) {
-      // Show error message
-      showError(err.message || 'Login failed. Please try again.');
+      // Show error message as toast
+      toast.error(err.message || 'Login failed. Please try again.', { 
+        duration: 5000,
+        showProgress: true
+      });
     } finally {
       // Always hide spinner
       hideLoading();
     }
   });
 
-  // Optional: Clear error when user starts typing
+  // Optional: Show welcome toast on page load
+  setTimeout(() => {
+    toast.info('Welcome back! Please log in to continue.', { 
+      duration: 4000,
+      showProgress: true
+    });
+  }, 500);
+
+  // Remove error styling on input
   [emailInput, passwordInput].forEach(input => {
     input.addEventListener('input', () => {
-      hideError();
+      input.classList.remove('error');
     });
   });
 });
