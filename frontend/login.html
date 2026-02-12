@@ -42,30 +42,8 @@
             placeholder="Password"
             required
           />
-
-          <!-- Login options: remember me + forgot password (preserved) -->
-          <div class="login-options">
-            <label class="remember-me">
-              <input type="checkbox" id="remember" />
-              <span>Remember me</span>
-            </label>
-            <div class="forgot-password">
-              <a href="forgot-password.html">Forgot password?</a>
-            </div>
-          </div>
-
-          <button type="submit" id="login-button">Login</button>
-
-          <!-- Spinner overlay - added cleanly without layout shift -->
-          <div id="spinner-overlay" class="spinner-overlay" aria-hidden="true">
-            <div class="spinner" role="status" aria-live="polite">
-              <span class="sr-only">Logging in, please wait...</span>
-            </div>
-          </div>
+          <button type="submit">Login</button>
         </form>
-
-        <!-- Error message container (preserved from existing style) -->
-        <div id="form-error" class="form-error" style="display: none"></div>
 
         <hr />
         <div class="small">
