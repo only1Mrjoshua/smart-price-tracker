@@ -1,3 +1,6 @@
+// js/product.js
+// Product page functionality with toast notifications and confirmation modal
+
 requireAuth();
 
 function getId() {
@@ -115,12 +118,23 @@ function drawLineChart(canvas, points) {
 async function loadDetail() {
   const id = getId();
   if (!id) {
-    alert("Missing product id");
-    window.location.href = 'dashboard.html';
+    toast.error("Missing product ID. Redirecting to dashboard...", {
+      duration: 3000,
+      showProgress: true
+    });
+    
+    setTimeout(() => {
+      window.location.href = 'dashboard.html';
+    }, 2500);
     return;
   }
 
   try {
+    toast.info('Loading product details...', {
+      duration: 2000,
+      showProgress: true
+    });
+
     const data = await apiFetch(`/products/${id}`);
     document.getElementById("title").textContent = data.title || "Untitled";
     document.getElementById("meta").textContent = `${data.platform.toUpperCase()} • ${data.status}`;
@@ -163,7 +177,10 @@ async function loadDetail() {
     await loadAlerts(id);
   } catch (error) {
     console.error('Failed to load product details:', error);
-    alert('Failed to load product details. Please try again.');
+    toast.error('Failed to load product details. Please try again.', {
+      duration: 5000,
+      showProgress: true
+    });
   }
 }
 
@@ -212,53 +229,122 @@ async function loadAlerts(productId) {
       box.appendChild(alertCard);
     }
 
-    // Add event listeners
+    // Add event listeners for toggle buttons
     box.querySelectorAll("button[data-toggle]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-toggle");
         const current = mine.find(x => x.id === id);
+        const newState = !current.is_active;
+        
+        const originalText = btn.textContent;
+        btn.textContent = "Updating...";
+        btn.disabled = true;
+        
         try {
           await apiFetch(`/alerts/${id}`, {
             method: "PATCH",
-            body: JSON.stringify({ is_active: !current.is_active })
+            body: JSON.stringify({ is_active: newState })
           });
+          
+          toast.success(`Alert ${newState ? 'enabled' : 'disabled'} successfully`, {
+            duration: 3000,
+            showProgress: true
+          });
+          
           await loadAlerts(productId);
         } catch (error) {
-          alert("Failed to update alert: " + error.message);
+          toast.error(`Failed to update alert: ${error.message}`, {
+            duration: 5000,
+            showProgress: true
+          });
+        } finally {
+          btn.textContent = originalText;
+          btn.disabled = false;
         }
       });
     });
 
+    // Add event listeners for delete buttons with confirmation modal
     box.querySelectorAll("button[data-del]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-del");
-        if (!confirm("Delete this alert? This action cannot be undone.")) return;
+        
+        const confirmed = await confirmationModal.show({
+          title: 'Delete Alert',
+          message: 'Are you sure you want to delete this alert? This action cannot be undone.',
+          confirmText: 'Delete',
+          cancelText: 'Cancel',
+          type: 'danger'
+        });
+        
+        if (!confirmed) return;
+        
+        const originalText = btn.textContent;
+        btn.textContent = "Deleting...";
+        btn.disabled = true;
+        
         try {
           await apiFetch(`/alerts/${id}`, { method: "DELETE" });
+          
+          toast.success('Alert deleted successfully', {
+            duration: 3000,
+            showProgress: true
+          });
+          
           await loadAlerts(productId);
         } catch (error) {
-          alert("Failed to delete alert: " + error.message);
+          toast.error(`Failed to delete alert: ${error.message}`, {
+            duration: 5000,
+            showProgress: true
+          });
+        } finally {
+          btn.textContent = originalText;
+          btn.disabled = false;
         }
       });
     });
   } catch (error) {
     console.error('Failed to load alerts:', error);
-    alert('Failed to load alerts. Please try again.');
+    toast.error('Failed to load alerts. Please try again.', {
+      duration: 5000,
+      showProgress: true
+    });
   }
 }
 
-document.getElementById("logoutBtn").addEventListener("click", (e) => {
+// Desktop logout button with confirmation modal
+document.getElementById("logoutBtn").addEventListener("click", async (e) => {
   e.preventDefault();
-  if (confirm("Are you sure you want to logout?")) {
-    logout();
+  
+  const confirmed = await confirmationModal.show({
+    title: 'Logout',
+    message: 'Are you sure you want to logout from your account?',
+    confirmText: 'Logout',
+    cancelText: 'Stay',
+    type: 'warning'
+  });
+  
+  if (confirmed) {
+    toast.info('Logging you out...', {
+      duration: 1500,
+      showProgress: true
+    });
+    
+    setTimeout(() => {
+      logout();
+    }, 1500);
   }
 });
 
+// Alert form submission
 document.getElementById("alertForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const productId = getId();
   if (!productId) {
-    alert("Product ID is missing");
+    toast.error("Product ID is missing. Please reload the page.", {
+      duration: 4000,
+      showProgress: true
+    });
     return;
   }
 
@@ -273,7 +359,32 @@ document.getElementById("alertForm").addEventListener("submit", async (e) => {
 
   // Validate at least one criteria is provided
   if (!target && !disc) {
-    alert("Please provide either a target price or discount threshold");
+    toast.warning("Please provide either a target price or discount threshold", {
+      duration: 4000,
+      showProgress: true
+    });
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+    return;
+  }
+
+  // Validate target price is positive
+  if (target && Number(target) <= 0) {
+    toast.error("Target price must be greater than 0", {
+      duration: 4000,
+      showProgress: true
+    });
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+    return;
+  }
+
+  // Validate discount threshold is between 0 and 100
+  if (disc && (Number(disc) <= 0 || Number(disc) > 100)) {
+    toast.error("Discount threshold must be between 1% and 100%", {
+      duration: 4000,
+      showProgress: true
+    });
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
     return;
@@ -288,12 +399,26 @@ document.getElementById("alertForm").addEventListener("submit", async (e) => {
   };
 
   try {
-    await apiFetch("/alerts", { method: "POST", body: JSON.stringify(payload) });
+    await apiFetch("/alerts", { 
+      method: "POST", 
+      body: JSON.stringify(payload) 
+    });
+    
     document.getElementById("targetPrice").value = "";
     document.getElementById("discountThreshold").value = "";
+    document.getElementById("notifyOnce").checked = true;
+    
+    toast.success("✓ Alert created successfully", {
+      duration: 3000,
+      showProgress: true
+    });
+    
     await loadAlerts(productId);
   } catch (err) {
-    alert("Failed to create alert: " + err.message);
+    toast.error(`Failed to create alert: ${err.message}`, {
+      duration: 5000,
+      showProgress: true
+    });
   } finally {
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
@@ -303,7 +428,10 @@ document.getElementById("alertForm").addEventListener("submit", async (e) => {
 // Load on page load
 loadDetail().catch(err => {
   console.error('Page load error:', err);
-  alert('Failed to load product page. Please try again.');
+  toast.error('Failed to load product page. Please try again.', {
+    duration: 5000,
+    showProgress: true
+  });
 });
 
 // Handle window resize for chart

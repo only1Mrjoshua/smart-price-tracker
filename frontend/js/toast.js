@@ -1,20 +1,19 @@
 // js/toast.js
-// Modern toast notification system
-// Version 1.0.0
+// Modern toast notification system with confirmation modal
+// Version 2.0.0
 
 class ToastManager {
   constructor() {
     this.container = null;
-    this.defaultDuration = 5000; // 5 seconds
+    this.defaultDuration = 5000;
     this.position = 'top-right';
-    this.toasts = new Map(); // Store toast elements and their timeouts
+    this.toasts = new Map();
     this.counter = 0;
     
     this.init();
   }
 
   init() {
-    // Create toast container if it doesn't exist
     if (!document.getElementById('toast-container')) {
       this.container = document.createElement('div');
       this.container.id = 'toast-container';
@@ -27,12 +26,10 @@ class ToastManager {
     }
   }
 
-  // Generate unique ID for each toast
   generateId() {
     return `toast-${++this.counter}-${Date.now()}`;
   }
 
-  // Create toast element
   createToast(options) {
     const {
       type = 'info',
@@ -50,7 +47,6 @@ class ToastManager {
     toast.setAttribute('aria-live', 'polite');
     toast.setAttribute('aria-describedby', `${toastId}-message`);
 
-    // Icons for different toast types
     const icons = {
       success: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
       error: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
@@ -58,7 +54,6 @@ class ToastManager {
       info: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`
     };
 
-    // Toast structure
     toast.innerHTML = `
       <div class="toast__content">
         <div class="toast__icon" aria-hidden="true">
@@ -82,24 +77,20 @@ class ToastManager {
     return { toast, toastId };
   }
 
-  // Show toast notification
   show(options) {
     const { toast, toastId } = this.createToast(options);
     const { duration = this.defaultDuration, showProgress = true } = options;
 
-    // Add to container (newest on top)
     if (this.container.firstChild) {
       this.container.insertBefore(toast, this.container.firstChild);
     } else {
       this.container.appendChild(toast);
     }
 
-    // Trigger reflow for animation
     toast.offsetHeight;
     toast.classList.add('toast--visible');
 
-    // Setup progress bar animation
-    let progressBar, progressInterval;
+    let progressBar;
     if (showProgress) {
       progressBar = toast.querySelector('.toast__progress');
       if (progressBar) {
@@ -107,28 +98,22 @@ class ToastManager {
       }
     }
 
-    // Auto-dismiss timeout
     const timeoutId = setTimeout(() => {
       this.dismiss(toastId);
     }, duration);
 
-    // Store toast data
     this.toasts.set(toastId, {
       element: toast,
       timeoutId,
-      progressInterval
+      progressBar
     });
 
-    // Close button handler
     const closeBtn = toast.querySelector('.toast__close');
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
         this.dismiss(toastId);
       });
-    }
-
-    // Keyboard accessibility: auto-focus close button for screen readers
-    if (closeBtn) {
+      
       closeBtn.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           this.dismiss(toastId);
@@ -139,38 +124,31 @@ class ToastManager {
     return toastId;
   }
 
-  // Dismiss specific toast
   dismiss(toastId) {
     const toastData = this.toasts.get(toastId);
     if (!toastData) return;
 
-    const { element, timeoutId, progressInterval } = toastData;
+    const { element, timeoutId } = toastData;
 
-    // Clear timeout and interval
     clearTimeout(timeoutId);
-    if (progressInterval) clearInterval(progressInterval);
 
-    // Remove visible class to trigger exit animation
     element.classList.remove('toast--visible');
     element.classList.add('toast--hidden');
 
-    // Remove from DOM after animation
     setTimeout(() => {
       if (element && element.parentNode) {
         element.parentNode.removeChild(element);
         this.toasts.delete(toastId);
       }
-    }, 300); // Match CSS transition duration
+    }, 300);
   }
 
-  // Dismiss all toasts
   dismissAll() {
     this.toasts.forEach((_, toastId) => {
       this.dismiss(toastId);
     });
   }
 
-  // Set position
   setPosition(position) {
     const validPositions = ['top-right', 'top-left', 'bottom-right', 'bottom-left', 'top-center', 'bottom-center'];
     if (validPositions.includes(position)) {
@@ -179,12 +157,10 @@ class ToastManager {
     }
   }
 
-  // Set default duration
   setDefaultDuration(duration) {
     this.defaultDuration = duration;
   }
 
-  // Convenience methods
   success(message, options = {}) {
     return this.show({ ...options, type: 'success', message });
   }
@@ -202,10 +178,181 @@ class ToastManager {
   }
 }
 
-// Create global toast instance
+// Confirmation Modal Class
+class ConfirmationModal {
+  constructor() {
+    this.modal = null;
+    this.init();
+  }
+
+  init() {
+    // Create modal if it doesn't exist
+    if (!document.getElementById('confirmation-modal')) {
+      this.modal = document.createElement('div');
+      this.modal.id = 'confirmation-modal';
+      this.modal.className = 'confirmation-modal';
+      this.modal.setAttribute('role', 'dialog');
+      this.modal.setAttribute('aria-modal', 'true');
+      this.modal.setAttribute('aria-labelledby', 'confirmation-title');
+      this.modal.setAttribute('aria-describedby', 'confirmation-message');
+      this.modal.style.display = 'none';
+      
+      this.modal.innerHTML = `
+        <div class="confirmation-modal__overlay"></div>
+        <div class="confirmation-modal__container">
+          <div class="confirmation-modal__header">
+            <h3 id="confirmation-title" class="confirmation-modal__title">Confirm Action</h3>
+            <button class="confirmation-modal__close" aria-label="Close">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="confirmation-modal__content">
+            <div class="confirmation-modal__icon" id="confirmation-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <div class="confirmation-modal__message-wrapper">
+              <p id="confirmation-message" class="confirmation-modal__message">Are you sure you want to proceed?</p>
+            </div>
+          </div>
+          <div class="confirmation-modal__footer">
+            <button class="confirmation-modal__btn confirmation-modal__btn--cancel" id="confirm-cancel">Cancel</button>
+            <button class="confirmation-modal__btn confirmation-modal__btn--confirm" id="confirm-ok">Confirm</button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(this.modal);
+    } else {
+      this.modal = document.getElementById('confirmation-modal');
+    }
+    
+    // Add event listeners
+    this.attachEventListeners();
+  }
+  
+  attachEventListeners() {
+    if (!this.modal) return;
+    
+    const overlay = this.modal.querySelector('.confirmation-modal__overlay');
+    const closeBtn = this.modal.querySelector('.confirmation-modal__close');
+    const cancelBtn = this.modal.querySelector('#confirm-cancel');
+    
+    // Remove existing listeners by cloning and replacing
+    const newOverlay = overlay.cloneNode(true);
+    const newCloseBtn = closeBtn.cloneNode(true);
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    
+    overlay.parentNode.replaceChild(newOverlay, overlay);
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+    
+    // Add fresh listeners
+    newOverlay.addEventListener('click', () => this.hide());
+    newCloseBtn.addEventListener('click', () => this.hide());
+    newCancelBtn.addEventListener('click', () => this.hide());
+    
+    // Close on escape key
+    document.removeEventListener('keydown', this.escapeKeyHandler);
+    this.escapeKeyHandler = (e) => {
+      if (e.key === 'Escape' && this.modal.style.display === 'flex') {
+        this.hide();
+      }
+    };
+    document.addEventListener('keydown', this.escapeKeyHandler);
+  }
+
+  show(options = {}) {
+    return new Promise((resolve) => {
+      const {
+        title = 'Confirm Action',
+        message = 'Are you sure you want to proceed?',
+        confirmText = 'Confirm',
+        cancelText = 'Cancel',
+        type = 'warning'
+      } = options;
+
+      // Set title
+      const titleEl = this.modal.querySelector('#confirmation-title');
+      if (titleEl) titleEl.textContent = title;
+
+      // Set message
+      const messageEl = this.modal.querySelector('#confirmation-message');
+      if (messageEl) messageEl.textContent = message;
+
+      // Set icon based on type
+      const iconEl = this.modal.querySelector('#confirmation-icon');
+      const icons = {
+        warning: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+        danger: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+        info: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+        success: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
+      };
+      if (iconEl) iconEl.innerHTML = icons[type] || icons.warning;
+      
+      // Set modal class based on type
+      this.modal.className = `confirmation-modal confirmation-modal--${type}`;
+
+      // Set button text
+      const confirmBtn = this.modal.querySelector('#confirm-ok');
+      const cancelBtn = this.modal.querySelector('#confirm-cancel');
+      
+      if (confirmBtn) confirmBtn.textContent = confirmText;
+      if (cancelBtn) cancelBtn.textContent = cancelText;
+
+      // Show modal
+      this.modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      
+      // Focus confirm button for accessibility
+      setTimeout(() => {
+        if (confirmBtn) confirmBtn.focus();
+      }, 100);
+
+      // Handle confirm
+      const handleConfirm = () => {
+        this.hide();
+        resolve(true);
+        cleanup();
+      };
+
+      // Handle cancel
+      const handleCancel = () => {
+        this.hide();
+        resolve(false);
+        cleanup();
+      };
+
+      // Cleanup event listeners
+      const cleanup = () => {
+        if (confirmBtn) confirmBtn.removeEventListener('click', handleConfirm);
+        if (cancelBtn) cancelBtn.removeEventListener('click', handleCancel);
+      };
+
+      if (confirmBtn) confirmBtn.addEventListener('click', handleConfirm);
+      if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
+    });
+  }
+
+  hide() {
+    if (this.modal) {
+      this.modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+}
+
+// Create global instances
 const toast = new ToastManager();
+const confirmationModal = new ConfirmationModal();
 
 // Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { toast, ToastManager };
+  module.exports = { toast, ToastManager, confirmationModal, ConfirmationModal };
 }

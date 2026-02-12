@@ -1,3 +1,6 @@
+// js/admin.js
+// Admin dashboard functionality with toast notifications and confirmation modal
+
 requireAuth();
 
 // Initialize mobile menu
@@ -13,7 +16,6 @@ function initMobileMenu() {
     return;
   }
   
-  // Toggle mobile menu
   function toggleMenu() {
     const isActive = menuToggle.classList.toggle('active');
     mobileMenu.classList.toggle('active');
@@ -21,7 +23,6 @@ function initMobileMenu() {
     document.body.style.overflow = isActive ? 'hidden' : '';
   }
   
-  // Close menu
   function closeMobileMenu() {
     menuToggle.classList.remove('active');
     mobileMenu.classList.remove('active');
@@ -29,12 +30,10 @@ function initMobileMenu() {
     document.body.style.overflow = '';
   }
   
-  // Event listeners
   menuToggle.addEventListener('click', toggleMenu);
   closeMenu.addEventListener('click', closeMobileMenu);
   mobileMenuOverlay.addEventListener('click', closeMobileMenu);
   
-  // Close menu when clicking on a link
   mobileMenu.querySelectorAll('.mobile-nav-links a').forEach(link => {
     link.addEventListener('click', (e) => {
       if (link.href === '#' || link.getAttribute('href') === 'javascript:void(0)') {
@@ -45,23 +44,37 @@ function initMobileMenu() {
     });
   });
   
-  // Mobile logout button
-  mobileLogoutBtn.addEventListener('click', (e) => {
+  // Mobile logout button with confirmation modal
+  mobileLogoutBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     closeMobileMenu();
-    if (confirm("Are you sure you want to logout?")) {
-      logout();
+    
+    const confirmed = await confirmationModal.show({
+      title: 'Logout',
+      message: 'Are you sure you want to logout from your account?',
+      confirmText: 'Logout',
+      cancelText: 'Stay',
+      type: 'warning'
+    });
+    
+    if (confirmed) {
+      toast.info('Logging you out...', {
+        duration: 1500,
+        showProgress: true
+      });
+      
+      setTimeout(() => {
+        logout();
+      }, 1500);
     }
   });
   
-  // Close menu on escape key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && mobileMenu.classList.contains('active')) {
       closeMobileMenu();
     }
   });
   
-  // Prevent body scroll when menu is open (touch devices)
   mobileMenu.addEventListener('touchmove', (e) => {
     if (mobileMenu.scrollHeight > mobileMenu.clientHeight) {
       return;
@@ -70,30 +83,48 @@ function initMobileMenu() {
   }, { passive: false });
 }
 
-// Initialize mobile menu on DOM load
 document.addEventListener('DOMContentLoaded', initMobileMenu);
 
 async function load() {
   try {
     const user = await me();
     
-    // Update mobile user info
     const mobileWho = document.getElementById('mobileWho');
     if (mobileWho) {
       mobileWho.textContent = `${user.name} (${user.role})`;
     }
     
     if (user.role !== "ADMIN") {
-      alert("Admin access required");
-      window.location.href = "dashboard.html";
+      toast.error("Admin access required. Redirecting to dashboard...", {
+        duration: 3000,
+        showProgress: true
+      });
+      
+      setTimeout(() => {
+        window.location.href = "dashboard.html";
+      }, 2500);
       return;
     }
 
+    toast.info('Loading admin dashboard...', {
+      duration: 2000,
+      showProgress: true
+    });
+
     await loadUsers();
     await loadProducts();
+    
+    toast.success('Admin dashboard loaded successfully', {
+      duration: 3000,
+      showProgress: true
+    });
+    
   } catch (error) {
     console.error("Failed to load admin page:", error);
-    alert("Failed to load admin dashboard. Please refresh the page.");
+    toast.error("Failed to load admin dashboard. Please refresh the page.", {
+      duration: 5000,
+      showProgress: true
+    });
   }
 }
 
@@ -141,9 +172,18 @@ async function loadUsers() {
       `;
       tbody.appendChild(row);
     }
+    
+    toast.success(`Loaded ${users.length} users`, {
+      duration: 2000,
+      showProgress: false
+    });
+    
   } catch (error) {
     console.error("Failed to load users:", error);
-    alert("Failed to load users. Please try again.");
+    toast.error("Failed to load users. Please try again.", {
+      duration: 4000,
+      showProgress: true
+    });
   }
 }
 
@@ -208,20 +248,54 @@ async function loadProducts() {
       tbody.appendChild(row);
     }
 
+    toast.success(`Loaded ${items.length} tracked products`, {
+      duration: 2000,
+      showProgress: false
+    });
+
     // Add event listeners for recheck buttons
     tbody.querySelectorAll("button[data-recheck]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-recheck");
         const originalText = btn.textContent;
+        const productRow = btn.closest('tr');
+        const productTitle = productRow?.querySelector('.admin-product-info__title b')?.textContent || 'Product';
+        
+        // Confirm before recheck using confirmationModal
+        const confirmed = await confirmationModal.show({
+          title: 'Force Recheck',
+          message: `Are you sure you want to force a price recheck for "${productTitle}"?`,
+          confirmText: 'Recheck',
+          cancelText: 'Cancel',
+          type: 'info'
+        });
+        
+        if (!confirmed) {
+          return;
+        }
+        
         btn.textContent = "Rechecking...";
         btn.disabled = true;
 
         try {
+          toast.info(`Queuing recheck for "${productTitle}"...`, {
+            duration: 2000,
+            showProgress: true
+          });
+          
           await apiFetch(`/admin/recheck/${id}`, { method: "POST" });
-          alert("Recheck queued successfully. The system will process it shortly.");
+          
+          toast.success(`✓ Recheck queued for "${productTitle}"`, {
+            duration: 4000,
+            showProgress: true
+          });
+          
           await loadProducts();
         } catch (error) {
-          alert("Failed to queue recheck: " + error.message);
+          toast.error(`✗ Failed to queue recheck for "${productTitle}": ${error.message}`, {
+            duration: 5000,
+            showProgress: true
+          });
         } finally {
           btn.textContent = originalText;
           btn.disabled = false;
@@ -230,19 +304,42 @@ async function loadProducts() {
     });
   } catch (error) {
     console.error("Failed to load products:", error);
-    alert("Failed to load products. Please try again.");
+    toast.error("Failed to load products. Please try again.", {
+      duration: 4000,
+      showProgress: true
+    });
   }
 }
 
-document.getElementById("logoutBtn").addEventListener("click", (e) => {
+// Desktop logout button with confirmation modal
+document.getElementById("logoutBtn").addEventListener("click", async (e) => {
   e.preventDefault();
-  if (confirm("Are you sure you want to logout?")) {
-    logout();
+  
+  const confirmed = await confirmationModal.show({
+    title: 'Logout',
+    message: 'Are you sure you want to logout from your account?',
+    confirmText: 'Logout',
+    cancelText: 'Stay',
+    type: 'warning'
+  });
+  
+  if (confirmed) {
+    toast.info('Logging you out...', {
+      duration: 1500,
+      showProgress: true
+    });
+    
+    setTimeout(() => {
+      logout();
+    }, 1500);
   }
 });
 
 // Load data on page load
 load().catch((error) => {
   console.error("Failed to load admin page:", error);
-  alert("Failed to load admin dashboard. Please refresh the page.");
+  toast.error("Failed to load admin dashboard. Please refresh the page.", {
+    duration: 5000,
+    showProgress: true
+  });
 });
