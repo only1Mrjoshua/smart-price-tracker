@@ -130,11 +130,6 @@ async function loadDetail() {
   }
 
   try {
-    toast.info('Loading product details...', {
-      duration: 2000,
-      showProgress: true
-    });
-
     const data = await apiFetch(`/products/${id}`);
     document.getElementById("title").textContent = data.title || "Untitled";
     document.getElementById("meta").textContent = `${data.platform.toUpperCase()} • ${data.status}`;
