@@ -1656,3 +1656,7 @@ button.secondary:hover:not(:disabled),
     padding: var(--space-md);
   }
 }
+
+.container > .card + .card {
+  margin-top: var(--space-xl);
+}

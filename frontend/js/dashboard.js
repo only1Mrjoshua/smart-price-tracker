@@ -1,6 +1,6 @@
 // js/dashboard.js
 // Dashboard functionality with toast notifications, confirmation modal, mobile menu,
-// and Track-by-Request feature (best-effort search + user selection).
+// and Track-by-Request feature (best-effort search + user selection) + Delete Request.
 
 requireAuth();
 
@@ -448,6 +448,11 @@ async function selectRequestCandidate(requestId, url) {
   });
 }
 
+/** ✅ NEW: delete request */
+async function deleteRequest(requestId) {
+  return apiFetch(`/requests/${requestId}`, { method: "DELETE" });
+}
+
 async function loadRequests() {
   const listEl = document.getElementById("requestsList");
   if (!listEl) return;
@@ -503,10 +508,14 @@ function renderRequests(items) {
               ${blocked}
               ${err}
             </div>
+
             <div class="request-row__actions">
               <button class="secondary view-req-btn" data-req-id="${escapeHtml(
                 r.id
               )}">View</button>
+              <button class="button--danger del-req-btn" data-req-id="${escapeHtml(
+                r.id
+              )}">Delete</button>
             </div>
           </div>
         </div>
@@ -527,6 +536,48 @@ function renderRequests(items) {
       } catch (e) {
         toast.error(e?.message || "Failed to load request detail", {
           duration: 4000,
+          showProgress: true,
+        });
+      } finally {
+        btn.textContent = prev;
+        btn.disabled = false;
+      }
+    });
+  });
+
+  /** ✅ NEW: delete button handler */
+  document.querySelectorAll(".del-req-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-req-id");
+
+      const row = btn.closest(".request-row");
+      const title =
+        row?.querySelector(".request-row__title")?.textContent?.trim() ||
+        "this request";
+
+      const confirmed = await confirmationModal.show({
+        title: "Delete Request",
+        message: `Are you sure you want to delete ${escapeHtml(
+          `"${title}"`
+        )}? This cannot be undone.`,
+        confirmText: "Delete",
+        cancelText: "Cancel",
+        type: "danger",
+      });
+
+      if (!confirmed) return;
+
+      const prev = btn.textContent;
+      btn.textContent = "Deleting...";
+      btn.disabled = true;
+
+      try {
+        await deleteRequest(id);
+        toast.success("✓ Request deleted", { duration: 3000, showProgress: true });
+        await loadRequests();
+      } catch (e) {
+        toast.error(e?.message || "Failed to delete request", {
+          duration: 4500,
           showProgress: true,
         });
       } finally {
