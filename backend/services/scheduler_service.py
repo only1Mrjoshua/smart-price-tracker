@@ -12,6 +12,8 @@ from backend.scrapers.jumia import fetch_product_data_from_html as jumia_from_ht
 from backend.scrapers.konga import fetch_product_data_from_html as konga_from_html
 from backend.scrapers.amazon import fetch_product_data_from_html as amazon_from_html
 from backend.scrapers.ebay import fetch_product_data_from_html as ebay_from_html
+from backend.scrapers.jiji import fetch_product_data_from_html as jiji_from_html
+
 
 UA = "Mozilla/5.0 (compatible; SmartPriceTracker/0.1; +respect-robots)"
 
@@ -20,6 +22,7 @@ SCRAPER_MAP = {
     "konga": konga_from_html,
     "amazon": amazon_from_html,
     "ebay": ebay_from_html,
+    "jiji": jiji_from_html,
 }
 
 def _platform_from_doc(doc: dict) -> str:

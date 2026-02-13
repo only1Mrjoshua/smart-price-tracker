@@ -10,13 +10,13 @@ router = APIRouter(prefix="/products", tags=["products"])
 
 class TrackIn(BaseModel):
     url: HttpUrl
-    platform: str  # jumia|konga|amazon|ebay
+    platform: str  # jumia|konga|amazon|ebay|jiji
 
 @router.post("/track")
 async def track_product(data: TrackIn, user=Depends(get_current_user)):
     db = get_db()
     platform = data.platform.lower().strip()
-    if platform not in ("jumia", "konga", "amazon", "ebay"):
+    if platform not in ("jumia", "konga", "amazon", "ebay", "jiji"):
         raise HTTPException(status_code=400, detail="Unsupported platform")
 
     doc = {

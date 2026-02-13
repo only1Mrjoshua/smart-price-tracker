@@ -12,8 +12,8 @@ from backend.db import get_db, ensure_indexes
 from backend.utils.time import utc_now
 from backend.services.auth_service import make_password_hash
 
-ADMIN_EMAIL = "admin@example.com"
-ADMIN_PASSWORD = "Admin12345!"  # change immediately in real use
+ADMIN_EMAIL = "sorochijoshua30@gmail.com"
+ADMIN_PASSWORD = "LovuLord2022$$"  # change immediately in real use
 
 async def main():
     await ensure_indexes()
