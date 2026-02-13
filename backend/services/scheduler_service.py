@@ -14,6 +14,9 @@ from backend.scrapers.amazon import fetch_product_data_from_html as amazon_from_
 from backend.scrapers.ebay import fetch_product_data_from_html as ebay_from_html
 from backend.scrapers.jiji import fetch_product_data_from_html as jiji_from_html
 
+from backend.services.request_service import process_pending_requests
+
+
 
 UA = "Mozilla/5.0 (compatible; SmartPriceTracker/0.1; +respect-robots)"
 
@@ -118,6 +121,7 @@ async def run_check_cycle():
         if status == "blocked" and last_checked and last_checked > days_ago(1):
             continue  # wait ~1 day for blocked in MVP
         await check_one_product(tracked)
+        await process_pending_requests()
 
 async def force_recheck(product_id):
     db = get_db()

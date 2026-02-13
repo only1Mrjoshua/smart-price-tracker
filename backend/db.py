@@ -29,3 +29,6 @@ async def ensure_indexes():
     await db.alerts.create_index([("user_id", 1), ("tracked_product_id", 1)])
     await db.notifications.create_index([("user_id", 1), ("sent_at", -1)])
     await db.jobs_log.create_index([("ran_at", -1)])
+    await db.track_requests.create_index([("user_id", 1), ("created_at", -1)])
+    await db.track_requests.create_index([("status", 1), ("updated_at", -1)])
+

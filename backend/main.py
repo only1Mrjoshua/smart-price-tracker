@@ -16,6 +16,8 @@ from backend.routers.alerts import router as alerts_router
 from backend.routers.notifications import router as notifications_router
 from backend.routers.admin import router as admin_router
 from backend.services.logging_service import log_job
+from backend.routers.requests import router as requests_router
+
 
 app = FastAPI(title=settings.APP_NAME)
 
@@ -61,3 +63,4 @@ app.include_router(products_router, prefix=settings.API_PREFIX)
 app.include_router(alerts_router, prefix=settings.API_PREFIX)
 app.include_router(notifications_router, prefix=settings.API_PREFIX)
 app.include_router(admin_router, prefix=settings.API_PREFIX)
+app.include_router(requests_router, prefix=settings.API_PREFIX)

@@ -1462,3 +1462,197 @@ button.secondary:hover:not(:disabled),
     border: 1px solid CanvasText;
   }
 }
+
+/* ======================================================================
+   TRACK BY REQUEST (Jiji Search Requests)
+   ====================================================================== */
+
+/* Requests list rows */
+#requestsList {
+  display: grid;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.request-row {
+  padding: var(--space-md);
+  border: 1px solid rgba(24, 24, 24, 0.08);
+  background: rgba(240, 245, 244, 0.45);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.request-row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(24, 24, 24, 0.08);
+}
+
+.request-row .small {
+  text-align: left;
+}
+
+.request-row__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.request-row__meta {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.request-row__title {
+  font-weight: 700;
+  color: var(--color-primary-text);
+}
+
+.request-row__badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+}
+
+.request-row__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.request-row__notice {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-error);
+}
+
+/* ======================================================================
+   REQUEST RESULTS MODAL (Matches your Confirmation Modal + Dashboard theme)
+   ====================================================================== */
+
+.req-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 25000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+}
+
+.req-modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(24, 24, 24, 0.7);
+  backdrop-filter: blur(4px);
+  animation: modal-fade-in 0.2s ease;
+}
+
+.req-modal__panel {
+  position: relative;
+  width: 100%;
+  max-width: 780px;
+  max-height: 85vh;
+  overflow: auto;
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 14px 48px rgba(24, 24, 24, 0.22);
+  border: 1px solid rgba(24, 24, 24, 0.08);
+  animation: modal-slide-up 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.req-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--color-gray-light);
+  background: rgba(240, 245, 244, 0.5);
+}
+
+.req-modal__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-primary-text);
+}
+
+.req-modal__subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+  color: var(--color-gray-dark);
+}
+
+.req-modal__status {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--color-gray-medium);
+}
+
+.req-modal__body {
+  padding: var(--space-lg);
+}
+
+.req-cards {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.req-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(24, 24, 24, 0.08);
+  background: rgba(240, 245, 244, 0.35);
+  padding: var(--space-md);
+}
+
+.req-card__title {
+  font-weight: 700;
+  color: var(--color-primary-text);
+  margin-bottom: 0.25rem;
+}
+
+.req-card__price {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-gray-dark);
+}
+
+.req-card__actions {
+  margin-top: var(--space-sm);
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.req-card__actions a.secondary {
+  text-decoration: none;
+  border-radius: var(--radius-full);
+  padding: var(--space-sm) var(--space-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.req-muted {
+  font-size: 0.875rem;
+  color: var(--color-gray-medium);
+}
+
+.req-danger-text {
+  font-weight: 700;
+  color: var(--color-error);
+}
+
+/* Mobile modal spacing */
+@media (max-width: 480px) {
+  .req-modal__header,
+  .req-modal__body {
+    padding: var(--space-md);
+  }
+}

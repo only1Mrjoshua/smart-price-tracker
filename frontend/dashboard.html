@@ -62,6 +62,67 @@
         </div>
       </div>
 
+      <!-- ✅ Track by Request -->
+      <div class="card">
+        <div class="h1" style="font-size: 22px">
+          Track by Request (Best-effort Search)
+        </div>
+        <p class="p">
+          Describe what you want (e.g., “iPhone 15”) and optional max price.
+          We’ll search the platform best-effort and show results for you to pick
+          and track.
+        </p>
+
+        <form id="requestForm">
+          <div
+            style="
+              display: grid;
+              gap: 10px;
+              grid-template-columns: 1fr 2fr 1fr;
+              align-items: end;
+            "
+          >
+            <div>
+              <label class="small">Platform</label>
+              <select id="reqPlatform" required>
+                <option value="jiji">Jiji</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="small">Request</label>
+              <input
+                id="reqQuery"
+                placeholder="e.g., iPhone 15 128GB"
+                required
+              />
+            </div>
+
+            <div>
+              <label class="small">Max price (optional)</label>
+              <input id="reqMaxPrice" type="number" placeholder="300000" />
+            </div>
+          </div>
+
+          <div style="margin-top: 10px; display: flex; gap: 10px">
+            <button type="submit">Submit Request</button>
+            <button type="button" class="secondary" id="refreshRequestsBtn">
+              Refresh
+            </button>
+          </div>
+        </form>
+
+        <div class="small" style="margin-top: 10px">
+          Search may be partial or blocked. If blocked, we retry later. You will
+          always confirm results before tracking.
+        </div>
+
+        <div style="margin-top: 14px">
+          <div class="h1" style="font-size: 18px">Your Requests</div>
+          <div id="requestsList"></div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="h1" style="font-size: 22px">Tracked products</div>
 
