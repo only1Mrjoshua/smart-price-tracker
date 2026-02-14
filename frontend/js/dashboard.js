@@ -14,16 +14,8 @@ function initMobileMenu() {
   const mobileMenu = document.getElementById("mobileMenu");
   const mobileLogoutBtn = document.getElementById("mobileLogoutBtn");
 
-  if (
-    !menuToggle ||
-    !closeMenu ||
-    !mobileMenuOverlay ||
-    !mobileMenu ||
-    !mobileLogoutBtn
-  ) {
-    console.warn(
-      "Some mobile menu elements not found, skipping mobile menu initialization"
-    );
+  if (!menuToggle || !closeMenu || !mobileMenuOverlay || !mobileMenu || !mobileLogoutBtn) {
+    console.warn("Some mobile menu elements not found, skipping mobile menu initialization");
     return;
   }
 
@@ -123,8 +115,7 @@ async function load() {
     if (whoElement) whoElement.textContent = `${user.name} (${user.role})`;
 
     const mobileWhoElement = document.getElementById("mobileWho");
-    if (mobileWhoElement)
-      mobileWhoElement.textContent = `${user.name} (${user.role})`;
+    if (mobileWhoElement) mobileWhoElement.textContent = `${user.name} (${user.role})`;
 
     if (user.role === "ADMIN") {
       const adminLink = document.getElementById("adminLink");
@@ -133,10 +124,7 @@ async function load() {
       if (mobileAdminLink) mobileAdminLink.style.display = "flex";
     }
 
-    toast.info(`Welcome back, ${user.name}!`, {
-      duration: 3000,
-      showProgress: true,
-    });
+    toast.info(`Welcome back, ${user.name}!`, { duration: 3000, showProgress: true });
 
     await loadProducts();
     await loadNotifications();
@@ -192,46 +180,29 @@ async function loadProducts() {
       row.className = "product-row";
       row.innerHTML = `
         <td class="product-info">
-          <div class="product-title"><b>${escapeHtml(
-            p.title || "Untitled"
-          )}</b></div>
+          <div class="product-title"><b>${escapeHtml(p.title || "Untitled")}</b></div>
           <div class="product-meta">
-            <span class="product-platform">${escapeHtml(
-              (p.platform || "").toUpperCase()
-            )}</span>
+            <span class="product-platform">${escapeHtml((p.platform || "").toUpperCase())}</span>
             <span class="product-divider">•</span>
-            <a href="${escapeHtml(
-              p.url
-            )}" target="_blank" class="product-link" rel="noopener">Open product page</a>
+            <a href="${escapeHtml(p.url)}" target="_blank" class="product-link" rel="noopener">Open product page</a>
           </div>
         </td>
         <td class="product-price">${fmtMoney(p.current_price, p.currency)}</td>
         <td class="product-status">
-          <span class="badge ${statusClass}">${escapeHtml(
-            p.status || "—"
-          )}</span>
+          <span class="badge ${statusClass}">${escapeHtml(p.status || "—")}</span>
         </td>
         <td class="product-checked">
-          <div class="last-checked">${
-            lastChecked ? lastChecked.toLocaleDateString() : "—"
-          }</div>
+          <div class="last-checked">${lastChecked ? lastChecked.toLocaleDateString() : "—"}</div>
           <div class="last-checked-time">${
             lastChecked
-              ? lastChecked.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
+              ? lastChecked.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
               : ""
           }</div>
         </td>
         <td class="product-actions">
           <div class="actions">
-            <button class="action-button button--secondary" data-view="${
-              p.id
-            }">View</button>
-            <button class="action-button button--danger" data-del="${
-              p.id
-            }">Delete</button>
+            <button class="action-button button--secondary" data-view="${p.id}">View</button>
+            <button class="action-button button--danger" data-del="${p.id}">Delete</button>
           </div>
         </td>
       `;
@@ -250,8 +221,7 @@ async function loadProducts() {
         const id = btn.getAttribute("data-del");
         const productRow = btn.closest("tr");
         const productTitle =
-          productRow?.querySelector(".product-title b")?.textContent ||
-          "Product";
+          productRow?.querySelector(".product-title b")?.textContent || "Product";
 
         const confirmed = await confirmationModal.show({
           title: "Delete Product",
@@ -268,16 +238,10 @@ async function loadProducts() {
 
         try {
           await apiFetch(`/products/${id}`, { method: "DELETE" });
-          toast.success(`✓ "${productTitle}" deleted successfully`, {
-            duration: 3000,
-            showProgress: true,
-          });
+          toast.success(`✓ "${productTitle}" deleted successfully`, { duration: 3000, showProgress: true });
           await loadProducts();
         } catch (err) {
-          toast.error(`Failed to delete "${productTitle}": ${err.message}`, {
-            duration: 5000,
-            showProgress: true,
-          });
+          toast.error(`Failed to delete "${productTitle}": ${err.message}`, { duration: 5000, showProgress: true });
         } finally {
           btn.textContent = originalText;
           btn.disabled = false;
@@ -286,10 +250,7 @@ async function loadProducts() {
     });
   } catch (error) {
     console.error("Failed to load products:", error);
-    toast.error("Failed to load products. Please try again.", {
-      duration: 4000,
-      showProgress: true,
-    });
+    toast.error("Failed to load products. Please try again.", { duration: 4000, showProgress: true });
   }
 }
 
@@ -330,22 +291,14 @@ async function loadNotifications() {
 
       const d = safeDate(n.sent_at);
       const dateText = d ? d.toLocaleDateString() : "";
-      const timeText = d
-        ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        : "";
+      const timeText = d ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
 
       notification.innerHTML = `
         <div class="notification__header">
-          <span class="notification__channel">${escapeHtml(
-            n.channel || "in_app"
-          )}</span>
-          <span class="notification__time">${escapeHtml(
-            dateText
-          )} • ${escapeHtml(timeText)}</span>
+          <span class="notification__channel">${escapeHtml(n.channel || "in_app")}</span>
+          <span class="notification__time">${escapeHtml(dateText)} • ${escapeHtml(timeText)}</span>
         </div>
-        <div class="notification__title">${escapeHtml(
-          n.type || "Price Alert"
-        )}</div>
+        <div class="notification__title">${escapeHtml(n.type || "Price Alert")}</div>
         <div class="notification__message">${escapeHtml(n.message || "")}</div>
       `;
       box.appendChild(notification);
@@ -359,7 +312,6 @@ async function loadNotifications() {
     }
   } catch (error) {
     console.error("Failed to load notifications:", error);
-    // Not critical
   }
 }
 
@@ -376,20 +328,14 @@ document.getElementById("trackForm")?.addEventListener("submit", async (e) => {
   const platform = platformEl?.value;
 
   if (!url) {
-    toast.error("Please enter a product URL", {
-      duration: 4000,
-      showProgress: true,
-    });
+    toast.error("Please enter a product URL", { duration: 4000, showProgress: true });
     return;
   }
 
   try {
     new URL(url);
   } catch {
-    toast.error("Please enter a valid URL", {
-      duration: 4000,
-      showProgress: true,
-    });
+    toast.error("Please enter a valid URL", { duration: 4000, showProgress: true });
     return;
   }
 
@@ -399,24 +345,12 @@ document.getElementById("trackForm")?.addEventListener("submit", async (e) => {
   submitBtn.disabled = true;
 
   try {
-    await apiFetch("/products/track", {
-      method: "POST",
-      body: JSON.stringify({ url, platform }),
-    });
-
+    await apiFetch("/products/track", { method: "POST", body: JSON.stringify({ url, platform }) });
     if (urlEl) urlEl.value = "";
-
-    toast.success("✓ Product added successfully!", {
-      duration: 4000,
-      showProgress: true,
-    });
-
+    toast.success("✓ Product added successfully!", { duration: 4000, showProgress: true });
     await loadProducts();
   } catch (err) {
-    toast.error(`Tracking failed: ${err.message}`, {
-      duration: 5000,
-      showProgress: true,
-    });
+    toast.error(`Tracking failed: ${err.message}`, { duration: 5000, showProgress: true });
   } finally {
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
@@ -427,10 +361,7 @@ document.getElementById("trackForm")?.addEventListener("submit", async (e) => {
    Track by Request
 ---------------------------- */
 async function createRequest(payload) {
-  return apiFetch("/requests", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiFetch("/requests", { method: "POST", body: JSON.stringify(payload) });
 }
 
 async function fetchRequests() {
@@ -448,7 +379,7 @@ async function selectRequestCandidate(requestId, url) {
   });
 }
 
-/** ✅ NEW: delete request */
+/* ✅ NEW: delete request */
 async function deleteRequest(requestId) {
   return apiFetch(`/requests/${requestId}`, { method: "DELETE" });
 }
@@ -485,17 +416,10 @@ function renderRequests(items) {
     .map((r) => {
       const status = escapeHtml(r.status || "—");
       const rc = Number(r.result_count || 0);
-      const mp = r.max_price
-        ? `<span class="badge">≤ ${escapeHtml(r.max_price)}</span>`
-        : "";
+      const mp = r.max_price ? `<span class="badge">≤ ${escapeHtml(r.max_price)}</span>` : "";
 
-      const blocked = r.blocked_reason
-        ? `<div class="request-row__notice">${escapeHtml(r.blocked_reason)}</div>`
-        : "";
-
-      const err = r.error_message
-        ? `<div class="request-row__notice">${escapeHtml(r.error_message)}</div>`
-        : "";
+      const blocked = r.blocked_reason ? `<div class="request-row__notice">${escapeHtml(r.blocked_reason)}</div>` : "";
+      const err = r.error_message ? `<div class="request-row__notice">${escapeHtml(r.error_message)}</div>` : "";
 
       return `
         <div class="request-row">
@@ -510,12 +434,8 @@ function renderRequests(items) {
             </div>
 
             <div class="request-row__actions">
-              <button class="secondary view-req-btn" data-req-id="${escapeHtml(
-                r.id
-              )}">View</button>
-              <button class="button--danger del-req-btn" data-req-id="${escapeHtml(
-                r.id
-              )}">Delete</button>
+              <button class="secondary view-req-btn" data-req-id="${escapeHtml(r.id)}">View</button>
+              <button class="button--danger del-req-btn" data-req-id="${escapeHtml(r.id)}">Delete</button>
             </div>
           </div>
         </div>
@@ -534,10 +454,7 @@ function renderRequests(items) {
         const detail = await fetchRequestDetail(id);
         showRequestResultsModal(detail);
       } catch (e) {
-        toast.error(e?.message || "Failed to load request detail", {
-          duration: 4000,
-          showProgress: true,
-        });
+        toast.error(e?.message || "Failed to load request detail", { duration: 4000, showProgress: true });
       } finally {
         btn.textContent = prev;
         btn.disabled = false;
@@ -545,21 +462,17 @@ function renderRequests(items) {
     });
   });
 
-  /** ✅ NEW: delete button handler */
+  /* ✅ NEW: delete button handler */
   document.querySelectorAll(".del-req-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-req-id");
 
       const row = btn.closest(".request-row");
-      const title =
-        row?.querySelector(".request-row__title")?.textContent?.trim() ||
-        "this request";
+      const title = row?.querySelector(".request-row__title")?.textContent?.trim() || "this request";
 
       const confirmed = await confirmationModal.show({
         title: "Delete Request",
-        message: `Are you sure you want to delete ${escapeHtml(
-          `"${title}"`
-        )}? This cannot be undone.`,
+        message: `Are you sure you want to delete "${escapeHtml(title)}"? This cannot be undone.`,
         confirmText: "Delete",
         cancelText: "Cancel",
         type: "danger",
@@ -576,10 +489,7 @@ function renderRequests(items) {
         toast.success("✓ Request deleted", { duration: 3000, showProgress: true });
         await loadRequests();
       } catch (e) {
-        toast.error(e?.message || "Failed to delete request", {
-          duration: 4500,
-          showProgress: true,
-        });
+        toast.error(e?.message || "Failed to delete request", { duration: 4500, showProgress: true });
       } finally {
         btn.textContent = prev;
         btn.disabled = false;
@@ -599,29 +509,15 @@ function showRequestResultsModal(detail) {
         <div class="req-modal__header">
           <div>
             <div class="req-modal__title">
-              Results — ${escapeHtml(detail.query)} (${escapeHtml(
-    detail.platform
-  )})
+              Results — ${escapeHtml(detail.query)} (${escapeHtml(detail.platform)})
             </div>
 
             <div class="req-modal__status">
               Status: <b>${escapeHtml(detail.status || "—")}</b>
             </div>
 
-            ${
-              detail.blocked_reason
-                ? `<div class="req-danger-text" style="margin-top:8px;">${escapeHtml(
-                    detail.blocked_reason
-                  )}</div>`
-                : ""
-            }
-            ${
-              detail.error_message
-                ? `<div class="req-danger-text" style="margin-top:8px;">${escapeHtml(
-                    detail.error_message
-                  )}</div>`
-                : ""
-            }
+            ${detail.blocked_reason ? `<div class="req-danger-text" style="margin-top:8px;">${escapeHtml(detail.blocked_reason)}</div>` : ""}
+            ${detail.error_message ? `<div class="req-danger-text" style="margin-top:8px;">${escapeHtml(detail.error_message)}</div>` : ""}
           </div>
 
           <button id="closeReqModal" class="secondary">Close</button>
@@ -635,24 +531,18 @@ function showRequestResultsModal(detail) {
                     .map((c) => {
                       const title = escapeHtml(c.title || "(no title)");
                       const priceText = c.price
-                        ? `${escapeHtml(c.price)} ${escapeHtml(
-                            c.currency || ""
-                          )}`
+                        ? `${escapeHtml(c.price)} ${escapeHtml(c.currency || "")}`
                         : "Price not detected";
                       const openUrl = escapeHtml(c.url);
 
                       return `
                         <div class="req-card">
                           <div class="req-card__title">${title}</div>
-                          <div class="req-card__price">${escapeHtml(
-                            priceText
-                          )}</div>
+                          <div class="req-card__price">${escapeHtml(priceText)}</div>
 
                           <div class="req-card__actions">
                             <a class="secondary" href="${openUrl}" target="_blank" rel="noopener">Open</a>
-                            <button class="track-candidate-btn" data-url="${openUrl}" data-req="${escapeHtml(
-                        detail.id
-                      )}">
+                            <button class="track-candidate-btn" data-url="${openUrl}" data-req="${escapeHtml(detail.id)}">
                               Track This
                             </button>
                           </div>
@@ -688,8 +578,7 @@ function showRequestResultsModal(detail) {
 
       const confirmed = await confirmationModal.show({
         title: "Track selected listing",
-        message:
-          "This will add the selected listing to your tracked products. Continue?",
+        message: "This will add the selected listing to your tracked products. Continue?",
         confirmText: "Track",
         cancelText: "Cancel",
         type: "info",
@@ -703,18 +592,12 @@ function showRequestResultsModal(detail) {
 
       try {
         await selectRequestCandidate(requestId, url);
-        toast.success("✓ Now tracking selected listing!", {
-          duration: 3500,
-          showProgress: true,
-        });
+        toast.success("✓ Now tracking selected listing!", { duration: 3500, showProgress: true });
         close();
         await loadProducts();
         await loadRequests();
       } catch (e) {
-        toast.error(e?.message || "Failed to track selected listing", {
-          duration: 4500,
-          showProgress: true,
-        });
+        toast.error(e?.message || "Failed to track selected listing", { duration: 4500, showProgress: true });
       } finally {
         btn.textContent = prev;
         btn.disabled = false;
@@ -728,15 +611,15 @@ document.getElementById("requestForm")?.addEventListener("submit", async (e) => 
   e.preventDefault();
 
   const platform = document.getElementById("reqPlatform")?.value;
-  const query = document.getElementById("reqQuery")?.value.trim();
-  const maxPriceRaw = document.getElementById("reqMaxPrice")?.value.trim();
+  const queryEl = document.getElementById("reqQuery");
+  const maxEl = document.getElementById("reqMaxPrice");
+
+  const query = queryEl?.value?.trim();
+  const maxPriceRaw = maxEl?.value?.trim();
   const max_price = maxPriceRaw ? Number(maxPriceRaw) : null;
 
   if (!query || query.length < 3) {
-    toast.error("Please enter a longer request (at least 3 characters)", {
-      duration: 4000,
-      showProgress: true,
-    });
+    toast.error("Please enter a longer request (at least 3 characters)", { duration: 4000, showProgress: true });
     return;
   }
 
@@ -748,21 +631,13 @@ document.getElementById("requestForm")?.addEventListener("submit", async (e) => 
   try {
     await createRequest({ platform, query, max_price });
 
-    const qEl = document.getElementById("reqQuery");
-    const pEl = document.getElementById("reqMaxPrice");
-    if (qEl) qEl.value = "";
-    if (pEl) pEl.value = "";
+    if (queryEl) queryEl.value = "";
+    if (maxEl) maxEl.value = "";
 
-    toast.success("✓ Request submitted. Check back for results shortly.", {
-      duration: 4000,
-      showProgress: true,
-    });
+    toast.success("✓ Request submitted. Check back for results shortly.", { duration: 4000, showProgress: true });
     await loadRequests();
   } catch (err) {
-    toast.error(err?.message || "Failed to submit request", {
-      duration: 5000,
-      showProgress: true,
-    });
+    toast.error(err?.message || "Failed to submit request", { duration: 5000, showProgress: true });
   } finally {
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
@@ -770,15 +645,10 @@ document.getElementById("requestForm")?.addEventListener("submit", async (e) => 
 });
 
 /* Refresh requests button */
-document
-  .getElementById("refreshRequestsBtn")
-  ?.addEventListener("click", async () => {
-    toast.info("Refreshing requests...", {
-      duration: 1500,
-      showProgress: true,
-    });
-    await loadRequests();
-  });
+document.getElementById("refreshRequestsBtn")?.addEventListener("click", async () => {
+  toast.info("Refreshing requests...", { duration: 1500, showProgress: true });
+  await loadRequests();
+});
 
 /* ---------------------------
    Desktop logout
@@ -805,8 +675,5 @@ document.getElementById("logoutBtn")?.addEventListener("click", async (e) => {
 ---------------------------- */
 load().catch((err) => {
   console.error("Failed to load dashboard:", err);
-  toast.error("Failed to load dashboard data. Please refresh the page.", {
-    duration: 5000,
-    showProgress: true,
-  });
+  toast.error("Failed to load dashboard data. Please refresh the page.", { duration: 5000, showProgress: true });
 });

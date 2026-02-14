@@ -10,7 +10,6 @@ from bs4 import BeautifulSoup
 def _normalize_price(text: str) -> Optional[float]:
     if not text:
         return None
-    # Handles: "₦ 120,000", "NGN 120,000", "120000"
     m = re.search(r"([\d][\d,]*)", text.replace(" ", ""))
     if not m:
         return None
@@ -31,18 +30,15 @@ def _is_probably_listing_url(url: str) -> bool:
     if not path or path == "/":
         return False
 
-    # skip obvious non-listing routes
     bad = ("login", "signup", "register", "privacy", "terms", "about", "help", "contact", "search")
     if any(x in path for x in bad):
         return False
 
-    # common listing patterns
     if "/ad/" in path:
         return True
     if path.endswith(".html"):
         return True
 
-    # heuristic: long slug-like paths
     if len(path) >= 20 and path.count("/") >= 2:
         return True
 
@@ -50,13 +46,10 @@ def _is_probably_listing_url(url: str) -> bool:
 
 
 def _extract_title_from_card(a_tag) -> Optional[str]:
-    # Try strong title candidates around the link
-    # 1) aria-label / title attribute
     t = a_tag.get("aria-label") or a_tag.get("title")
     if t and t.strip():
         return t.strip()
 
-    # 2) element text
     txt = a_tag.get_text(" ", strip=True)
     if txt and len(txt) >= 8:
         return txt
@@ -65,14 +58,20 @@ def _extract_title_from_card(a_tag) -> Optional[str]:
 
 
 def _extract_price_near(a_tag) -> Optional[float]:
-    # search for ₦... close to the link (parent/grandparent text)
     for node in [a_tag, a_tag.parent, getattr(a_tag.parent, "parent", None)]:
         if not node:
             continue
         txt = node.get_text(" ", strip=True)
+
+        # common ₦ pattern
         m = re.search(r"(₦\s?[\d,]+)", txt)
         if m:
             return _normalize_price(m.group(1))
+
+        # fallback: sometimes NGN appears
+        m2 = re.search(r"(NGN\s?[\d,]+)", txt, re.IGNORECASE)
+        if m2:
+            return _normalize_price(m2.group(1))
 
     return None
 
@@ -81,15 +80,16 @@ def parse_jiji_search_results(html: str, base_url: str = "https://jiji.ng") -> L
     """
     Returns candidates:
       {title, price, currency, url, image}
+    Best-effort: Jiji changes often.
 
-    Best-effort: Jiji changes often. This parser tries to reduce noise by:
+    This parser reduces noise by:
     - only keeping "listing-like" URLs
-    - requiring at least a decent title and/or a real ₦ price nearby
+    - requiring either a meaningful title or a detectable price
     """
     soup = BeautifulSoup(html, "html.parser")
     candidates: List[Dict] = []
 
-    anchors = soup.select('a[href]')
+    anchors = soup.select("a[href]")
     seen = set()
 
     for a in anchors:
@@ -99,29 +99,24 @@ def parse_jiji_search_results(html: str, base_url: str = "https://jiji.ng") -> L
 
         url = href if href.startswith("http") else urljoin(base_url, href)
 
-        # de-dupe
         if url in seen:
             continue
         seen.add(url)
 
-        # must look like a listing link
         if not _is_probably_listing_url(url):
             continue
 
         title = _extract_title_from_card(a)
         price = _extract_price_near(a)
 
-        # image (optional)
         image = None
         img = a.select_one("img")
         if img:
             image = img.get("src") or img.get("data-src")
 
-        # reduce junk: require either price or a meaningful title
         if (price is None) and (not title):
             continue
 
-        # avoid super-short titles (often “Open” / “View”)
         if title and len(title) < 8:
             title = None
 
@@ -133,12 +128,30 @@ def parse_jiji_search_results(html: str, base_url: str = "https://jiji.ng") -> L
             "image": image,
         })
 
-        if len(candidates) >= 40:  # parse more then filter later by relevance
+        # ✅ increase candidate cap per page to allow better relevance filtering later
+        # If you plan to fetch up to ~8 pages, 100 per page is fine.
+        if len(candidates) >= 120:
             break
 
     return candidates
 
 
-def build_jiji_search_url(query: str) -> str:
-    q = quote_plus(query.strip())
-    return f"https://jiji.ng/search?query={q}"
+def build_jiji_search_url(query: str, location: Optional[str] = None, page: int = 1) -> str:
+    """
+    Build a Jiji search URL.
+
+    - query: what user typed
+    - location: optional (e.g. "lagos", "abuja"). Jiji commonly supports /{location}/search
+    - page: page number starting at 1
+    """
+    q = quote_plus((query or "").strip())
+    page = int(page or 1)
+    if page < 1:
+        page = 1
+
+    loc = (location or "").strip().lower()
+    if loc:
+        # Jiji commonly supports: https://jiji.ng/lagos/search?query=iphone&page=2
+        return f"https://jiji.ng/{quote_plus(loc)}/search?query={q}&page={page}"
+
+    return f"https://jiji.ng/search?query={q}&page={page}"
