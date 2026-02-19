@@ -613,3 +613,50 @@ body {
     padding: var(--space-md);
   }
 }
+
+/* View Product Button for Notifications */
+.notification__actions,
+.notification-item__product-link {
+  margin-top: 12px;
+  text-align: right;
+}
+
+.notification__view-button,
+.notification-item__view-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background: var(--color-secondary-accent);
+  color: white;
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  transition: all var(--transition-base);
+  border: none;
+  cursor: pointer;
+}
+
+.notification__view-button:hover,
+.notification-item__view-button:hover {
+  background: #3a75e5;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Remove channel display */
+.notification__channel,
+.notification-item__channel {
+  display: none;
+}
+
+/* Adjust header for no channel */
+.notification__header {
+  justify-content: flex-end;
+}
+
+.notification-item__header {
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}

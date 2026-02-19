@@ -255,7 +255,7 @@ async function loadProducts() {
 }
 
 /* ---------------------------
-   Notifications
+   Notifications - UPDATED
 ---------------------------- */
 async function loadNotifications() {
   try {
@@ -276,7 +276,21 @@ async function loadNotifications() {
       return;
     }
 
-    for (const n of items.slice(0, 5)) {
+    // Filter out email notifications - only show in_app
+    const inAppNotifications = items.filter(n => n.channel === "in_app");
+    
+    if (inAppNotifications.length === 0) {
+      box.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state__icon">🔔</div>
+          <div class="empty-state__message">No in-app notifications</div>
+          <div class="empty-state__hint">Email notifications are sent to your inbox</div>
+        </div>
+      `;
+      return;
+    }
+
+    for (const n of inAppNotifications.slice(0, 5)) {
       const notificationClass =
         n.status === "sent"
           ? "notification--success"
@@ -293,21 +307,38 @@ async function loadNotifications() {
       const dateText = d ? d.toLocaleDateString() : "";
       const timeText = d ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
 
+      // Extract URL from message if present
+      const urlMatch = n.message?.match(/https?:\/\/[^\s]+/);
+      const productUrl = urlMatch ? urlMatch[0] : null;
+      
+      // Remove URL from message display
+      let displayMessage = n.message || "";
+      if (productUrl) {
+        displayMessage = displayMessage.replace(productUrl, '').trim();
+      }
+
       notification.innerHTML = `
         <div class="notification__header">
-          <span class="notification__channel">${escapeHtml(n.channel || "in_app")}</span>
           <span class="notification__time">${escapeHtml(dateText)} • ${escapeHtml(timeText)}</span>
         </div>
         <div class="notification__title">${escapeHtml(n.type || "Price Alert")}</div>
-        <div class="notification__message">${escapeHtml(n.message || "")}</div>
+        <div class="notification__message">${escapeHtml(displayMessage)}</div>
+        ${productUrl ? `
+          <div class="notification__actions">
+            <a href="${escapeHtml(productUrl)}" target="_blank" rel="noopener" class="notification__view-button">
+              View Product
+            </a>
+          </div>
+        ` : ''}
       `;
       box.appendChild(notification);
     }
 
-    if (items.length > 5) {
+    // Count only in-app notifications for the "View all" link
+    if (inAppNotifications.length > 5) {
       const viewAll = document.createElement("div");
       viewAll.className = "view-all-notifications";
-      viewAll.innerHTML = `<a href="notifications.html" class="small">View all ${items.length} notifications →</a>`;
+      viewAll.innerHTML = `<a href="notifications.html" class="small">View all ${inAppNotifications.length} notifications →</a>`;
       box.appendChild(viewAll);
     }
   } catch (error) {
@@ -379,7 +410,6 @@ async function selectRequestCandidate(requestId, url) {
   });
 }
 
-/* ✅ NEW: delete request */
 async function deleteRequest(requestId) {
   return apiFetch(`/requests/${requestId}`, { method: "DELETE" });
 }
@@ -462,7 +492,6 @@ function renderRequests(items) {
     });
   });
 
-  /* ✅ NEW: delete button handler */
   document.querySelectorAll(".del-req-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-req-id");

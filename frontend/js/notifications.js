@@ -1,4 +1,6 @@
+// js/notifications.js
 // Notifications page functionality
+
 requireAuth();
 
 /* =========================
@@ -76,6 +78,11 @@ async function loadUserInfo() {
 }
 
 /* =========================
+   State Management
+   ========================= */
+let allNotifications = [];
+
+/* =========================
    Load Notifications
    ========================= */
 async function loadNotifications() {
@@ -91,7 +98,8 @@ async function loadNotifications() {
     `;
 
     const notifications = await apiFetch("/notifications");
-    allNotifications = notifications || [];
+    // Filter out email notifications - only show in_app
+    allNotifications = (notifications || []).filter(n => n.channel === "in_app");
     
     updateNotificationCount();
     renderNotifications();
@@ -107,11 +115,6 @@ async function loadNotifications() {
     `;
   }
 }
-
-/* =========================
-   State Management
-   ========================= */
-let allNotifications = [];
 
 /* =========================
    Update Notification Count
@@ -159,16 +162,30 @@ function formatNotificationDate(dateString) {
 /* =========================
    Get Notification Icon
    ========================= */
-function getNotificationIcon(status, channel) {
-  if (channel === "email") return "📧";
-  if (channel === "in_app") return "🔔";
-  
+function getNotificationIcon(status) {
   switch(status) {
-    case "success": return "✅";
-    case "error": return "❌";
+    case "sent": return "✅";
+    case "failed": return "❌";
     case "warning": return "⚠️";
-    default: return "ℹ️";
+    default: return "🔔";
   }
+}
+
+/* =========================
+   Extract URL from Message
+   ========================= */
+function extractUrlFromMessage(message) {
+  if (!message) return null;
+  const urlMatch = message.match(/https?:\/\/[^\s]+/);
+  return urlMatch ? urlMatch[0] : null;
+}
+
+/* =========================
+   Clean Message (remove URL)
+   ========================= */
+function cleanMessage(message) {
+  if (!message) return "";
+  return message.replace(/https?:\/\/[^\s]+/g, '').trim();
 }
 
 /* =========================
@@ -191,7 +208,9 @@ function renderNotifications() {
   listEl.innerHTML = allNotifications.map(notification => {
     const date = formatNotificationDate(notification.sent_at);
     const isUnread = !notification.read;
-    const icon = getNotificationIcon(notification.status, notification.channel);
+    const icon = getNotificationIcon(notification.status);
+    const productUrl = extractUrlFromMessage(notification.message);
+    const cleanMsg = cleanMessage(notification.message);
     
     let statusClass = "notification-item--info";
     if (notification.status === "sent") statusClass = "notification-item--success";
@@ -206,13 +225,20 @@ function renderNotifications() {
         
         <div class="notification-item__content">
           <div class="notification-item__header">
-            <span class="notification-item__channel">${escapeHtml(notification.channel || "in_app")}</span>
             <span class="notification-item__time">${escapeHtml(date)}</span>
           </div>
           
           <div class="notification-item__title">${escapeHtml(notification.type || "Price Alert")}</div>
           
-          <div class="notification-item__message">${escapeHtml(notification.message || "")}</div>
+          <div class="notification-item__message">${escapeHtml(cleanMsg)}</div>
+          
+          ${productUrl ? `
+            <div class="notification-item__product-link">
+              <a href="${escapeHtml(productUrl)}" target="_blank" rel="noopener" class="notification-item__view-button">
+                View Product
+              </a>
+            </div>
+          ` : ''}
         </div>
         
         <div class="notification-item__actions">
