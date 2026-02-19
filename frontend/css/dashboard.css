@@ -473,7 +473,7 @@ button.secondary:hover:not(:disabled),
 #notifBox {
   display: flex;
   flex-direction: column;
-  height: 400px; /* Fixed height */
+  height: 300px; /* Fixed height */
   overflow-y: auto; /* Enable vertical scrolling */
   padding-right: 4px; /* Space for scrollbar */
   gap: var(--space-sm);
