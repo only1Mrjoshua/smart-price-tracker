@@ -2,7 +2,7 @@ import asyncio
 import httpx
 
 from backend.db import get_db
-from backend.utils.time import utc_now, days_ago
+from backend.utils.time import utc_now, days_ago, ensure_aware  # Add ensure_aware import
 from backend.services.robots_service import allowed_by_robots
 from backend.services.logging_service import log_job
 from backend.services.email_service import send_email, smtp_configured
@@ -15,7 +15,6 @@ from backend.scrapers.ebay import fetch_product_data_from_html as ebay_from_html
 from backend.scrapers.jiji import fetch_product_data_from_html as jiji_from_html
 
 from backend.services.request_service import process_pending_requests
-
 
 
 UA = "Mozilla/5.0 (compatible; SmartPriceTracker/0.1; +respect-robots)"
@@ -112,19 +111,36 @@ async def check_one_product(tracked: dict):
 async def run_check_cycle():
     db = get_db()
 
+    print(f"\n🔍 Starting check cycle at {utc_now()}")
+    
     # Basic backoff: if blocked, check less often by skipping if checked recently
     # ok/error/unavailable: normal frequency
     cursor = db.tracked_products.find({})
+    product_count = 0
+    
     async for tracked in cursor:
+        product_count += 1
         status = tracked.get("status", "ok")
         last_checked = tracked.get("last_checked")
-        if status == "blocked" and last_checked and last_checked > days_ago(1):
-            continue  # wait ~1 day for blocked in MVP
+        
+        # FIX: Ensure both datetimes are timezone-aware for comparison
+        if status == "blocked" and last_checked:
+            # Make sure last_checked is timezone-aware
+            last_checked_aware = ensure_aware(last_checked)
+            cutoff = days_ago(1)  # This is already aware from our fixed time.py
+            
+            if last_checked_aware > cutoff:
+                print(f"⏭️ Skipping blocked product (checked recently): {tracked.get('url')}")
+                continue  # wait ~1 day for blocked in MVP
+                
         await check_one_product(tracked)
         await process_pending_requests()
+    
+    print(f"✅ Check cycle completed. Processed {product_count} products at {utc_now()}")
 
 async def force_recheck(product_id):
     db = get_db()
     tracked = await db.tracked_products.find_one({"_id": product_id})
     if tracked:
+        print(f"⚡ Force rechecking product: {tracked.get('url')}")
         await check_one_product(tracked)

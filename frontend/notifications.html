@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Notifications • Smart Price Tracker</title>
+    <link rel="stylesheet" href="css/notifications.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Navigation -->
+      <div class="nav">
+        <div class="brand">
+          <a href="dashboard.html" class="back-link">←</a>
+          Notifications
+        </div>
+
+        <!-- Desktop Navigation -->
+        <div class="desktop-nav">
+          <a href="dashboard.html">Dashboard</a>
+          <a id="adminLink" href="admin.html" style="display: none">Admin</a>
+          <span class="badge" id="who">—</span>
+          <button class="secondary" id="logoutBtn">Logout</button>
+        </div>
+
+        <!-- Hamburger Menu Toggle -->
+        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+
+      <!-- Header with actions -->
+      <div class="notifications-header">
+        <div class="notifications-header__left">
+          <h1 class="notifications-title">All Notifications</h1>
+          <span class="notifications-count" id="notificationsCount">0</span>
+        </div>
+        <div class="notifications-header__right">
+          <button
+            class="button--secondary"
+            id="markAllReadBtn"
+            title="Mark all as read"
+          >
+            <span class="btn-icon">✓</span>
+            <span class="btn-text">Mark all read</span>
+          </button>
+          <button
+            class="button--danger"
+            id="clearAllBtn"
+            title="Clear all notifications"
+          >
+            <span class="btn-icon">🗑️</span>
+            <span class="btn-text">Clear all</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Notifications list -->
+      <div class="notifications-list" id="notificationsList">
+        <!-- Notifications will be loaded here -->
+        <div class="loading-state">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">Loading notifications...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+
+    <!-- Mobile Menu Sidebar -->
+    <nav class="mobile-menu" id="mobileMenu">
+      <div class="mobile-menu-header">
+        <div class="brand">Smart Price Tracker</div>
+        <button class="close-menu" id="closeMenu" aria-label="Close menu">
+          ×
+        </button>
+      </div>
+
+      <div class="mobile-user-info">
+        <div id="mobileWho">Loading...</div>
+      </div>
+
+      <div class="mobile-nav-links">
+        <a href="dashboard.html">
+          <span>📊</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="notifications.html" class="active">
+          <span>🔔</span>
+          <span>Notifications</span>
+        </a>
+        <a href="admin.html" id="mobileAdminLink" style="display: none">
+          <span>👑</span>
+          <span>Admin Dashboard</span>
+        </a>
+      </div>
+
+      <div class="mobile-menu-footer">
+        <button id="mobileLogoutBtn" class="button secondary">Logout</button>
+      </div>
+    </nav>
+
+    <!-- Delete confirmation modal -->
+    <div class="confirmation-modal" id="deleteModal">
+      <div class="confirmation-modal__overlay"></div>
+      <div class="confirmation-modal__container confirmation-modal--danger">
+        <div class="confirmation-modal__header">
+          <h3 class="confirmation-modal__title">Delete Notification</h3>
+          <button class="confirmation-modal__close" id="closeDeleteModal">
+            ×
+          </button>
+        </div>
+        <div class="confirmation-modal__content">
+          <div class="confirmation-modal__icon">🗑️</div>
+          <div class="confirmation-modal__message-wrapper">
+            <p class="confirmation-modal__message" id="deleteMessage">
+              Are you sure you want to delete this notification?
+            </p>
+          </div>
+        </div>
+        <div class="confirmation-modal__footer">
+          <button
+            class="confirmation-modal__btn confirmation-modal__btn--cancel"
+            id="cancelDelete"
+          >
+            Cancel
+          </button>
+          <button
+            class="confirmation-modal__btn confirmation-modal__btn--confirm"
+            id="confirmDelete"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clear all confirmation modal -->
+    <div class="confirmation-modal" id="clearAllModal">
+      <div class="confirmation-modal__overlay"></div>
+      <div class="confirmation-modal__container confirmation-modal--danger">
+        <div class="confirmation-modal__header">
+          <h3 class="confirmation-modal__title">Clear All Notifications</h3>
+          <button class="confirmation-modal__close" id="closeClearAllModal">
+            ×
+          </button>
+        </div>
+        <div class="confirmation-modal__content">
+          <div class="confirmation-modal__icon">⚠️</div>
+          <div class="confirmation-modal__message-wrapper">
+            <p class="confirmation-modal__message">
+              Are you sure you want to clear all notifications? This action
+              cannot be undone.
+            </p>
+          </div>
+        </div>
+        <div class="confirmation-modal__footer">
+          <button
+            class="confirmation-modal__btn confirmation-modal__btn--cancel"
+            id="cancelClearAll"
+          >
+            Cancel
+          </button>
+          <button
+            class="confirmation-modal__btn confirmation-modal__btn--confirm"
+            id="confirmClearAll"
+          >
+            Clear All
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/toast.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/notifications.js"></script>
+  </body>
+</html>

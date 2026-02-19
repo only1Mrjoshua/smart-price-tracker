@@ -471,12 +471,44 @@ button.secondary:hover:not(:disabled),
    NOTIFICATIONS (your JS classes)
    ========================= */
 #notifBox {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  height: 400px; /* Fixed height */
+  overflow-y: auto; /* Enable vertical scrolling */
+  padding-right: 4px; /* Space for scrollbar */
   gap: var(--space-sm);
-  min-height: 180px;
+  
+  /* Custom scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-medium) var(--color-gray-light);
+}
+
+#notifBox::-webkit-scrollbar {
+  width: 6px;
+}
+
+#notifBox::-webkit-scrollbar-track {
+  background: var(--color-gray-light);
+  border-radius: var(--radius-full);
+}
+
+#notifBox::-webkit-scrollbar-thumb {
+  background: var(--color-gray-medium);
+  border-radius: var(--radius-full);
+}
+
+#notifBox::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-dark);
+}
+
+/* Empty state inside scrollable container */
+#notifBox .empty-state {
+  margin: auto; /* Center vertically in the fixed container */
+  padding: var(--space-xl) var(--space-md);
 }
 
 .notification {
+  flex-shrink: 0; /* Prevent notifications from shrinking */
   border-radius: var(--radius-md);
   border: 1px solid rgba(24, 24, 24, 0.08);
   background: rgba(240, 245, 244, 0.45);
@@ -522,6 +554,7 @@ button.secondary:hover:not(:disabled),
   color: var(--color-gray-dark);
   line-height: 1.5;
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .notification--success {
@@ -542,14 +575,18 @@ button.secondary:hover:not(:disabled),
 }
 
 .view-all-notifications {
+  flex-shrink: 0; /* Keep "View all" button at bottom */
   text-align: center;
   padding-top: 0.25rem;
+  margin-top: auto; /* Push to bottom if there's space */
 }
 
 .view-all-notifications a {
   font-weight: 700;
   color: var(--color-secondary-accent);
   text-decoration: none;
+  display: inline-block;
+  padding: var(--space-xs) 0;
 }
 
 .view-all-notifications a:hover {
