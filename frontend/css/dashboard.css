@@ -1744,3 +1744,70 @@ button.secondary:hover:not(:disabled),
   justify-content: flex-end;
   margin-bottom: 8px;
 }
+
+/* =========================
+   FORMS - STYLED SELECT WITH CUSTOM ARROW
+   ========================= */
+form {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(24, 24, 24, 0.12);
+  background: #fff;
+  outline: none;
+  transition: border var(--transition-fast), box-shadow var(--transition-fast);
+  font-family: inherit;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(82, 133, 232, 0.7);
+  box-shadow: 0 0 0 4px rgba(82, 133, 232, 0.12);
+}
+
+::placeholder {
+  color: var(--color-gray-medium);
+}
+
+/* =========================
+   CUSTOM SELECT ARROW - WORKS IN ALL BROWSERS
+   ========================= */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235286e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.2rem;
+  padding-right: 2.5rem;
+}
+
+/* Hover effect on arrow */
+select:hover {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%233a75e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+}
+
+/* Style for the request platform dropdown */
+#reqPlatform {
+  background-color: rgba(82, 133, 232, 0.05);
+  border-color: rgba(82, 133, 232, 0.3);
+  color: var(--color-secondary-accent);
+  font-weight: 600;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  select {
+    background-size: 1rem;
+    background-position: right 0.75rem center;
+  }
+}
