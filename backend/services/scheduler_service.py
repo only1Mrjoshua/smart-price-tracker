@@ -1,8 +1,9 @@
 import asyncio
 import httpx
+import random  # Added for random user agent selection
 
 from backend.db import get_db
-from backend.utils.time import utc_now, days_ago, ensure_aware  # Add ensure_aware import
+from backend.utils.time import utc_now, days_ago, ensure_aware
 from backend.services.robots_service import allowed_by_robots
 from backend.services.logging_service import log_job
 from backend.services.email_service import send_email, smtp_configured
@@ -17,7 +18,43 @@ from backend.scrapers.jiji import fetch_product_data_from_html as jiji_from_html
 from backend.services.request_service import process_pending_requests
 
 
-UA = "Mozilla/5.0 (compatible; SmartPriceTracker/0.1; +respect-robots)"
+# Expanded list of user agents to avoid blocking
+USER_AGENTS = [
+    # Chrome Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
+    
+    # Chrome Mac
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    
+    # Chrome Linux
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    
+    # Firefox Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+    
+    # Firefox Mac
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0",
+    
+    # Safari Mac
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15",
+    
+    # Edge Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+    
+    # Mobile user agents
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (iPad; CPU OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (Linux; Android 13; SM-S908B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+]
+
+# Keep a fallback UA (not used directly but available if needed)
+FALLBACK_UA = "Mozilla/5.0 (compatible; SmartPriceTracker/0.1; +respect-robots)"
 
 SCRAPER_MAP = {
     "jumia": jumia_from_html,
@@ -31,7 +68,31 @@ def _platform_from_doc(doc: dict) -> str:
     return (doc.get("platform") or "").lower().strip()
 
 async def fetch_html(url: str) -> str:
-    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True, headers={"User-Agent": UA}) as client:
+    """Fetch HTML with random user agent to avoid blocking"""
+    # Pick a random user agent for each request
+    user_agent = random.choice(USER_AGENTS)
+    
+    # Add additional headers to look more like a real browser
+    headers = {
+        "User-Agent": user_agent,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Cache-Control": "max-age=0",
+    }
+    
+    async with httpx.AsyncClient(
+        timeout=30.0,  # Increased timeout
+        follow_redirects=True,
+        headers=headers
+    ) as client:
         r = await client.get(url)
         r.raise_for_status()
         return r.text
@@ -44,13 +105,19 @@ async def check_one_product(tracked: dict):
 
     try:
         if not url or platform not in SCRAPER_MAP:
-            await db.tracked_products.update_one({"_id": product_id}, {"$set": {"status": "error", "last_checked": utc_now()}})
+            await db.tracked_products.update_one(
+                {"_id": product_id}, 
+                {"$set": {"status": "error", "last_checked": utc_now()}}
+            )
             await log_job("check_product", platform, str(product_id), "error", "Missing URL or unsupported platform")
             return
 
         robots_ok = await allowed_by_robots(url)
         if not robots_ok:
-            await db.tracked_products.update_one({"_id": product_id}, {"$set": {"status": "blocked", "last_checked": utc_now(), "blocked_reason": "robots.txt disallow"}})
+            await db.tracked_products.update_one(
+                {"_id": product_id}, 
+                {"$set": {"status": "blocked", "last_checked": utc_now(), "blocked_reason": "robots.txt disallow"}}
+            )
             await log_job("check_product", platform, str(product_id), "blocked", "robots.txt disallow")
             return
 
@@ -102,10 +169,24 @@ async def check_one_product(tracked: dict):
         await log_job("check_product", platform, str(product_id), "ok", None)
 
     except httpx.HTTPStatusError as e:
-        await db.tracked_products.update_one({"_id": product_id}, {"$set": {"status": "error", "last_checked": utc_now()}})
+        await db.tracked_products.update_one(
+            {"_id": product_id}, 
+            {"$set": {"status": "error", "last_checked": utc_now()}}
+        )
         await log_job("check_product", platform, str(product_id), "error", f"HTTP error: {e.response.status_code}")
+    
+    except httpx.TimeoutException as e:
+        await db.tracked_products.update_one(
+            {"_id": product_id}, 
+            {"$set": {"status": "error", "last_checked": utc_now()}}
+        )
+        await log_job("check_product", platform, str(product_id), "error", f"Timeout: {str(e)}")
+    
     except Exception as e:
-        await db.tracked_products.update_one({"_id": product_id}, {"$set": {"status": "error", "last_checked": utc_now()}})
+        await db.tracked_products.update_one(
+            {"_id": product_id}, 
+            {"$set": {"status": "error", "last_checked": utc_now()}}
+        )
         await log_job("check_product", platform, str(product_id), "error", str(e))
 
 async def run_check_cycle():
@@ -135,6 +216,9 @@ async def run_check_cycle():
                 
         await check_one_product(tracked)
         await process_pending_requests()
+        
+        # Small delay between requests to avoid rate limiting
+        await asyncio.sleep(1)
     
     print(f"✅ Check cycle completed. Processed {product_count} products at {utc_now()}")
 

@@ -32,6 +32,8 @@ class SelectIn(BaseModel):
     url: str
 
 
+# backend/routers/requests.py
+
 @router.post("")
 async def create_track_request(data: RequestIn, user=Depends(get_current_user)):
     platform = (data.platform or "").lower().strip()
@@ -50,18 +52,24 @@ async def create_track_request(data: RequestIn, user=Depends(get_current_user)):
 
     location = (data.location or "").strip() or None
 
-    # 1) Create request doc
+    # Auto-detect category for iPhone searches
+    category_id = None
+    if "iphone" in q.lower():
+        from backend.searchers.jiji_search import JIJI_CATEGORIES
+        category_id = JIJI_CATEGORIES["mobile_phones"]
+
+    # 1) Create request doc with category
     req = await create_request(
         user_id=user["_id"],
         platform=platform,
         query=q,
         max_price=data.max_price,
-        location=location,  # ✅ new
-        limit=limit,        # ✅ new
+        location=location,
+        limit=limit,
+        category_id=category_id,  # Add this to your create_request function
     )
 
     await process_one_request_now(req["_id"])
-
 
     # 3) Return updated doc
     db = get_db()

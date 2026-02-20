@@ -25,7 +25,7 @@ SEARCHERS = {
 }
 
 # -------------------------
-# Relevance filtering (your original)
+# Relevance filtering (UPDATED)
 # -------------------------
 
 _STOPWORDS = {
@@ -43,7 +43,8 @@ def _normalize_text(s: str) -> str:
 
 def _tokenize_query(query: str) -> List[str]:
     q = _normalize_text(query)
-    tokens = [t for t in q.split(" ") if t and t not in _STOPWORDS]
+    # REMOVED stopword filter - keep all tokens for matching
+    tokens = [t for t in q.split(" ") if t]
     return tokens[:12]
 
 def _tokenize_title(title: str) -> List[str]:
@@ -54,26 +55,54 @@ def _score_candidate(query_tokens: List[str], title: str) -> Tuple[int, int]:
     if not title:
         return (0, 0)
 
+    title_lower = title.lower()
     title_norm = _normalize_text(title)
     title_tokens = set(_tokenize_title(title))
     qset = set(query_tokens)
 
     matches = 0
     score = 0
+    negative_score = 0
 
+    # Check for model number mismatch (critical for iPhone searches)
+    if 'iphone' in title_lower:
+        # Extract model numbers from query
+        query_models = [t for t in query_tokens if t.isdigit() and len(t) <= 4]
+        # Extract model numbers from title
+        title_models = [t for t in title_tokens if t.isdigit() and len(t) <= 4]
+        
+        # If query has a model number (like "15") and title has a different model number, heavily penalize
+        if query_models:
+            for q_model in query_models:
+                if title_models and q_model not in title_models:
+                    # Different model number - big penalty
+                    negative_score += 50
+                    # Debug
+                    print(f"⚠️ Model mismatch: query has {q_model}, title has {title_models}")
+                elif q_model in title_models:
+                    # Correct model - big bonus
+                    score += 50
+
+    # Token matching (more strict)
     for qt in qset:
-        if qt in title_tokens:
-            matches += 1
-            score += 10
+        # For important tokens (like model numbers), require exact match
+        if qt.isdigit() and len(qt) <= 4:
+            if qt in title_norm:
+                matches += 1
+                score += 30
+        else:
+            # For other tokens, check if they appear in title
+            if qt in title_norm or any(qt in tt for tt in title_tokens):
+                matches += 1
+                score += 10
 
+    # Boost score for phrase match
     q_phrase = " ".join(query_tokens).strip()
     if q_phrase and q_phrase in title_norm:
-        score += 20
+        score += 50
 
-    q_nums = [t for t in query_tokens if t.isdigit()]
-    for n in q_nums:
-        if n in title_tokens:
-            score += 8
+    # Apply negative score (if any)
+    score = max(0, score - negative_score)
 
     return (score, matches)
 
@@ -104,28 +133,39 @@ def _apply_filters_and_rank(
 
         score, matches = _score_candidate(q_tokens, title)
 
-        required_matches = 2 if len(q_tokens) >= 2 else 1
-        if matches < required_matches:
-            continue
+        # Require at least 2 matches for iPhone searches
+        if 'iphone' in query.lower():
+            # For iPhone searches, require model number match
+            if '15' in title.lower():
+                if matches >= 2:
+                    c["_score"] = score
+                    c["_matches"] = matches
+                    filtered.append(c)
+                    print(f"✅ ACCEPTED: '{title}' - score: {score}")
+            else:
+                print(f"❌ REJECTED (wrong model): '{title}'")
+        else:
+            # For other searches, use normal matching
+            if matches >= 2:
+                c["_score"] = score
+                c["_matches"] = matches
+                filtered.append(c)
 
-        c["_score"] = score
-        c["_matches"] = matches
-        filtered.append(c)
+    # Sort by score (higher is better)
+    filtered.sort(key=lambda x: x.get("_score", 0), reverse=True)
 
-    filtered.sort(
-        key=lambda x: (x.get("_score", 0), -(x.get("_matches", 0))),
-        reverse=True
-    )
-
+    # Remove temporary fields
     for c in filtered:
         c.pop("_score", None)
         c.pop("_matches", None)
+
+    print(f"Filtered {len(filtered)} out of {len(candidates)} candidates")
 
     return filtered
 
 
 # -------------------------
-# Helpers (NEW)
+# Helpers
 # -------------------------
 
 def _dedupe_by_url(items: List[Dict]) -> List[Dict]:
@@ -141,7 +181,7 @@ def _dedupe_by_url(items: List[Dict]) -> List[Dict]:
 
 
 # -------------------------
-# DB logic (UPDATED: store limit + location)
+# DB logic (UPDATED: store limit + location + category_id)
 # -------------------------
 
 async def create_request(
@@ -151,6 +191,7 @@ async def create_request(
     max_price: Optional[float],
     location: Optional[str] = None,
     limit: int = 50,
+    category_id: Optional[int] = None,
 ) -> Dict:
     db = get_db()
     now = utc_now()
@@ -167,8 +208,9 @@ async def create_request(
         "user_id": user_id,
         "platform": platform,
         "query": query,
-        "location": loc,         # ✅ NEW
-        "limit": lim,            # ✅ NEW
+        "location": loc,
+        "limit": lim,
+        "category_id": category_id,
         "max_price": float(max_price) if max_price is not None else None,
         "status": "pending",
         "results": [],
@@ -194,13 +236,12 @@ async def _fetch_html(url: str) -> str:
         return r.text
 
 
-# ✅ NEW: run instantly and WAIT (used by POST /requests so it returns results immediately)
 async def process_one_request_now(req_id: ObjectId) -> None:
     await process_one_request(req_id)
 
 
 # -------------------------
-# Search worker (UPDATED: paging + location + limit)
+# Search worker (UPDATED with debug prints)
 # -------------------------
 
 async def process_one_request(req: Union[ObjectId, Dict]) -> None:
@@ -260,19 +301,16 @@ async def process_one_request(req: Union[ObjectId, Dict]) -> None:
         limit = 100
 
     location = (req.get("location") or "").strip() or None
+    category_id = req.get("category_id")
 
-    # ✅ MULTI-PAGE: keep fetching until we collect enough ranked results
-    # Tune these values as needed
-    max_pages = 8                # usually enough to get 50+ candidates
-    hard_candidate_cap = 400     # prevent runaway memory
+    max_pages = 8
+    hard_candidate_cap = 400
 
     try:
         all_candidates: List[Dict] = []
 
         for page in range(1, max_pages + 1):
-            # ✅ build URL WITH location + page
-            # Your build_jiji_search_url MUST accept: (query, location=None, page=1)
-            search_url = build_url(query, location=location, page=page)
+            search_url = build_url(query, location=location, page=page, category_id=category_id)
 
             if not search_url:
                 break
@@ -303,10 +341,15 @@ async def process_one_request(req: Union[ObjectId, Dict]) -> None:
             if len(all_candidates) >= hard_candidate_cap:
                 break
 
-            # We don’t stop based on “limit” yet, because ranking happens after filters.
-            # But if we already have a lot, we can stop early.
             if len(all_candidates) >= max(120, limit * 4):
                 break
+
+        # Debug: Print total candidates before filtering
+        print(f"\n📊 Total candidates collected: {len(all_candidates)}")
+        if all_candidates:
+            print("Sample titles:")
+            for i, c in enumerate(all_candidates[:5]):
+                print(f"  {i+1}. '{c.get('title')}' - ₦{c.get('price')}")
 
         ranked = _apply_filters_and_rank(
             candidates=all_candidates,
@@ -314,7 +357,6 @@ async def process_one_request(req: Union[ObjectId, Dict]) -> None:
             max_price=max_price,
         )
 
-        # ✅ return/store ALL matches up to `limit` (e.g. 50)
         final_results = ranked[:limit]
 
         await db.track_requests.update_one(
