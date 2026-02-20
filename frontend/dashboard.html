@@ -74,46 +74,44 @@
         </p>
 
         <form id="requestForm">
-          <div
-            style="
-              display: grid;
-              gap: 10px;
-              grid-template-columns: 1fr 2fr 1fr 1fr;
-              align-items: end;
-            "
-          >
-            <div>
-              <label class="small">Platform</label>
-              <select id="reqPlatform" required>
-                <option value="jiji">Jiji</option>
-              </select>
+          <div class="request-form-grid">
+            <!-- First row: Platform, Request, Max price -->
+            <div class="request-form-row">
+              <div class="request-form-field">
+                <label class="small">Platform</label>
+                <select id="reqPlatform" required>
+                  <option value="jiji">Jiji</option>
+                </select>
+              </div>
+
+              <div class="request-form-field">
+                <label class="small">Request</label>
+                <input
+                  id="reqQuery"
+                  placeholder="e.g., iPhone 15 128GB"
+                  required
+                />
+              </div>
+
+              <div class="request-form-field">
+                <label class="small">Max price (optional)</label>
+                <input id="reqMaxPrice" type="number" placeholder="300000" />
+              </div>
             </div>
 
-            <div>
-              <label class="small">Request</label>
-              <input
-                id="reqQuery"
-                placeholder="e.g., iPhone 15 128GB"
-                required
-              />
+            <!-- Second row: Location (full width) -->
+            <div class="request-form-location">
+              <label class="small">Location (optional)</label>
+              <input id="reqLocation" placeholder="e.g., lagos, abuja" />
             </div>
 
-            <div>
-              <label class="small">Max price (optional)</label>
-              <input id="reqMaxPrice" type="number" placeholder="300000" />
+            <!-- Button row -->
+            <div class="request-form-buttons">
+              <button type="submit">Submit Request</button>
+              <button type="button" class="secondary" id="refreshRequestsBtn">
+                Refresh
+              </button>
             </div>
-          </div>
-
-          <div>
-            <label class="small">Location (optional)</label>
-            <input id="reqLocation" placeholder="e.g., lagos, abuja" />
-          </div>
-
-          <div style="margin-top: 10px; display: flex; gap: 10px">
-            <button type="submit">Submit Request</button>
-            <button type="button" class="secondary" id="refreshRequestsBtn">
-              Refresh
-            </button>
           </div>
         </form>
 
