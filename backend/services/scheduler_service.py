@@ -1,6 +1,7 @@
 import asyncio
 import httpx
 import random
+import os
 from typing import Optional
 import time
 
@@ -19,6 +20,11 @@ from backend.scrapers.jiji import fetch_product_data_from_html as jiji_from_html
 
 from backend.services.request_service import process_pending_requests
 
+
+# API Keys from environment variables
+SCRAPINGBEE_API_KEY = os.getenv("SCRAPINGBEE_API_KEY", None)
+SCRAPINGDOG_API_KEY = os.getenv("SCRAPINGDOG_API_KEY", None)
+PROXY_URL = os.getenv("PROXY_URL", None)
 
 # Expanded list of user agents with more variety
 USER_AGENTS = [
@@ -82,84 +88,174 @@ SCRAPER_MAP = {
 def _platform_from_doc(doc: dict) -> str:
     return (doc.get("platform") or "").lower().strip()
 
-async def fetch_html_with_retry(url: str, max_retries: int = 3) -> str:
-    """Fetch HTML with retry logic and exponential backoff"""
+async def fetch_via_scrapingbee(url: str) -> Optional[str]:
+    """Fetch URL using ScrapingBee API"""
+    if not SCRAPINGBEE_API_KEY:
+        return None
     
-    for attempt in range(max_retries):
-        try:
-            # Random delay before request (increased)
-            delay = random.uniform(3, 8)
-            await asyncio.sleep(delay)
-            
-            # Pick random user agent
-            user_agent = random.choice(USER_AGENTS)
-            
-            # Rotate accept language
-            accept_lang = random.choice(ACCEPT_LANGUAGES)
-            
-            # Randomize viewport size (some sites check this)
-            viewport_width = random.choice([1920, 1366, 1536, 1440, 1280])
-            viewport_height = random.choice([1080, 768, 864, 900, 720])
-            
-            # Browser-like headers with more randomization
-            headers = {
-                "User-Agent": user_agent,
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "Accept-Language": accept_lang,
-                "Accept-Encoding": "gzip, deflate, br",
-                "DNT": "1",
-                "Connection": "keep-alive",
-                "Upgrade-Insecure-Requests": "1",
-                "Sec-Fetch-Dest": "document",
-                "Sec-Fetch-Mode": "navigate",
-                "Sec-Fetch-Site": "none",
-                "Sec-Fetch-User": "?1",
-                "Cache-Control": "max-age=0",
-                "Viewport-Width": str(viewport_width),
-                "Viewport-Height": str(viewport_height),
-            }
-            
-            # Add random headers sometimes
-            if random.random() > 0.5:
-                headers["X-Forwarded-For"] = f"{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}"
-            
-            async with httpx.AsyncClient(
-                timeout=30.0,
-                follow_redirects=True,
-                headers=headers,
-                http2=random.choice([True, False]),  # Randomly use HTTP/2
-            ) as client:
-                print(f"🌐 Fetching {url} (attempt {attempt + 1}/{max_retries})")
-                r = await client.get(url)
-                
-                if r.status_code == 403:
-                    print(f"🚫 Got 403 on attempt {attempt + 1}")
-                    if attempt < max_retries - 1:
-                        # Exponential backoff
-                        wait_time = (2 ** attempt) * 5 + random.uniform(1, 5)
-                        print(f"⏳ Waiting {wait_time:.1f}s before retry...")
-                        await asyncio.sleep(wait_time)
-                        continue
-                
-                r.raise_for_status()
+    api_url = "https://app.scrapingbee.com/api/v1/"
+    params = {
+        "api_key": SCRAPINGBEE_API_KEY,
+        "url": url,
+        "render_js": "false",
+        "premium_proxy": "true",  # Use residential proxies
+        "country_code": "ng",      # Use Nigerian IPs for Jiji
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            r = await client.get(api_url, params=params)
+            if r.status_code == 200:
+                print(f"✅ ScrapingBee success: {url}")
                 return r.text
-                
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 403 and attempt < max_retries - 1:
-                wait_time = (2 ** attempt) * 5 + random.uniform(1, 5)
-                print(f"⏳ 403 error, retrying in {wait_time:.1f}s...")
-                await asyncio.sleep(wait_time)
-                continue
-            raise
-        except Exception as e:
-            if attempt < max_retries - 1:
-                wait_time = (2 ** attempt) * 3
-                print(f"⚠️ Error: {e}, retrying in {wait_time}s...")
-                await asyncio.sleep(wait_time)
-                continue
-            raise
+            else:
+                print(f"⚠️ ScrapingBee error: {r.status_code}")
+                return None
+    except Exception as e:
+        print(f"⚠️ ScrapingBee exception: {e}")
+        return None
+
+async def fetch_via_scrapingdog(url: str) -> Optional[str]:
+    """Fetch URL using ScrapingDog API"""
+    if not SCRAPINGDOG_API_KEY:
+        return None
     
-    raise Exception(f"Failed to fetch {url} after {max_retries} attempts")
+    api_url = "https://api.scrapingdog.com/scrape"
+    params = {
+        "api_key": SCRAPINGDOG_API_KEY,
+        "url": url,
+        "dynamic": "false",
+        "country": "ng",
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            r = await client.get(api_url, params=params)
+            if r.status_code == 200:
+                print(f"✅ ScrapingDog success: {url}")
+                return r.text
+            else:
+                print(f"⚠️ ScrapingDog error: {r.status_code}")
+                return None
+    except Exception as e:
+        print(f"⚠️ ScrapingDog exception: {e}")
+        return None
+
+async def fetch_via_proxy(url: str) -> Optional[str]:
+    """Fetch URL using a proxy server"""
+    if not PROXY_URL:
+        return None
+    
+    user_agent = random.choice(USER_AGENTS)
+    headers = {
+        "User-Agent": user_agent,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": random.choice(ACCEPT_LANGUAGES),
+    }
+    
+    try:
+        async with httpx.AsyncClient(
+            proxies=PROXY_URL,
+            headers=headers,
+            timeout=30.0,
+            follow_redirects=True
+        ) as client:
+            r = await client.get(url)
+            r.raise_for_status()
+            print(f"✅ Proxy success: {url}")
+            return r.text
+    except Exception as e:
+        print(f"⚠️ Proxy failed: {e}")
+        return None
+
+async def fetch_html_with_retry(url: str, max_retries: int = 3) -> str:
+    """Fetch HTML with retry logic and multiple fallback methods"""
+    
+    # Try different methods in sequence
+    fetch_methods = []
+    
+    # Add API methods first if keys are available
+    if SCRAPINGBEE_API_KEY:
+        fetch_methods.append(("ScrapingBee", fetch_via_scrapingbee))
+    if SCRAPINGDOG_API_KEY:
+        fetch_methods.append(("ScrapingDog", fetch_via_scrapingdog))
+    if PROXY_URL:
+        fetch_methods.append(("Proxy", fetch_via_proxy))
+    
+    # Add direct request as last resort
+    fetch_methods.append(("Direct", fetch_via_direct))
+    
+    for method_name, method_func in fetch_methods:
+        print(f"🔄 Trying {method_name} for {url}")
+        
+        for attempt in range(max_retries):
+            try:
+                result = await method_func(url)
+                if result:
+                    return result
+                
+                if attempt < max_retries - 1:
+                    wait_time = (2 ** attempt) * 3
+                    print(f"⏳ {method_name} failed, retrying in {wait_time}s...")
+                    await asyncio.sleep(wait_time)
+                    
+            except Exception as e:
+                print(f"⚠️ {method_name} error: {e}")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(2 ** attempt)
+        
+        print(f"❌ {method_name} failed for {url}, trying next method...")
+    
+    raise Exception(f"All fetch methods failed for {url}")
+
+async def fetch_via_direct(url: str) -> Optional[str]:
+    """Direct HTTP request with browser emulation"""
+    
+    # Random delay before request
+    delay = random.uniform(3, 8)
+    await asyncio.sleep(delay)
+    
+    # Pick random user agent
+    user_agent = random.choice(USER_AGENTS)
+    accept_lang = random.choice(ACCEPT_LANGUAGES)
+    
+    # Randomize viewport size
+    viewport_width = random.choice([1920, 1366, 1536, 1440, 1280])
+    viewport_height = random.choice([1080, 768, 864, 900, 720])
+    
+    headers = {
+        "User-Agent": user_agent,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": accept_lang,
+        "Accept-Encoding": "gzip, deflate, br",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Cache-Control": "max-age=0",
+        "Viewport-Width": str(viewport_width),
+        "Viewport-Height": str(viewport_height),
+    }
+    
+    # Add random X-Forwarded-For sometimes
+    if random.random() > 0.5:
+        headers["X-Forwarded-For"] = f"{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}"
+    
+    async with httpx.AsyncClient(
+        timeout=30.0,
+        follow_redirects=True,
+        headers=headers,
+        http2=random.choice([True, False]),
+    ) as client:
+        r = await client.get(url)
+        if r.status_code == 403:
+            print(f"🚫 Direct request got 403 for {url}")
+            return None
+        r.raise_for_status()
+        return r.text
 
 async def fetch_html(url: str) -> str:
     """Wrapper for fetch_html_with_retry"""
@@ -180,16 +276,19 @@ async def check_one_product(tracked: dict):
             await log_job("check_product", platform, str(product_id), "error", "Missing URL or unsupported platform")
             return
 
-        # Only check robots.txt occasionally to avoid extra requests
-        if random.random() > 0.7:  # 30% of the time
-            robots_ok = await allowed_by_robots(url)
-            if not robots_ok:
-                await db.tracked_products.update_one(
-                    {"_id": product_id}, 
-                    {"$set": {"status": "blocked", "last_checked": utc_now(), "blocked_reason": "robots.txt disallow"}}
-                )
-                await log_job("check_product", platform, str(product_id), "blocked", "robots.txt disallow")
-                return
+        # Skip robots.txt check for blocked sites
+        if random.random() > 0.9:  # Only 10% of the time
+            try:
+                robots_ok = await allowed_by_robots(url)
+                if not robots_ok:
+                    await db.tracked_products.update_one(
+                        {"_id": product_id}, 
+                        {"$set": {"status": "blocked", "last_checked": utc_now(), "blocked_reason": "robots.txt disallow"}}
+                    )
+                    await log_job("check_product", platform, str(product_id), "blocked", "robots.txt disallow")
+                    return
+            except:
+                pass  # Ignore robots.txt errors
 
         html = await fetch_html(url)
         data = SCRAPER_MAP[platform](html)
@@ -245,12 +344,19 @@ async def check_one_product(tracked: dict):
         
         # Special handling for 403
         if status_code == 403:
+            blocked_reason = "Site is blocking our requests"
+            # Check if we have any API keys for better message
+            if SCRAPINGBEE_API_KEY or SCRAPINGDOG_API_KEY or PROXY_URL:
+                blocked_reason = "Site blocking - proxy/API may be needed"
+            else:
+                blocked_reason = "Site blocking - configure ScrapingBee or proxy"
+            
             await db.tracked_products.update_one(
                 {"_id": product_id}, 
                 {"$set": {
                     "status": "blocked", 
                     "last_checked": utc_now(),
-                    "blocked_reason": "Site is blocking our requests"
+                    "blocked_reason": blocked_reason
                 }}
             )
         else:
@@ -274,12 +380,11 @@ async def run_check_cycle():
     db = get_db()
 
     print(f"\n🔍 Starting check cycle at {utc_now()}")
+    print(f"📊 Configured: ScrapingBee={bool(SCRAPINGBEE_API_KEY)}, ScrapingDog={bool(SCRAPINGDOG_API_KEY)}, Proxy={bool(PROXY_URL)}")
     
     cursor = db.tracked_products.find({})
     product_count = 0
-    success_count = 0
     blocked_count = 0
-    error_count = 0
     
     async for tracked in cursor:
         product_count += 1
@@ -295,9 +400,9 @@ async def run_check_cycle():
                 blocked_count += 1
                 continue
         
-        # Random longer delay between products (5-15 seconds)
+        # Random longer delay between products
         if product_count > 1:
-            delay = random.uniform(5, 15)
+            delay = random.uniform(8, 15)
             print(f"⏳ Waiting {delay:.1f}s before next product...")
             await asyncio.sleep(delay)
         
