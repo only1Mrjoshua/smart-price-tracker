@@ -1,6 +1,7 @@
 from backend.db import get_db
 from backend.utils.time import utc_now
 from backend.utils.ids import oid_str
+import traceback  # Add this import for better error tracking
 
 def compute_discount_percent(reference_price: float, current_price: float) -> float:
     if reference_price <= 0:
@@ -358,22 +359,44 @@ async def evaluate_alerts_and_notify(tracked_product: dict, latest_price: float,
             print(f"  ❌ In-app notification failed: {e}")
             pass
 
-        # Email notification with HTML
+        # Email notification with HTML - WITH DEBUG CODE ADDED HERE
         user = await db.users.find_one({"_id": tracked_product["user_id"]})
         if user and user.get("email"):
             try:
+                # ========== DEBUG START ==========
+                print(f"\n🔍 EMAIL DEBUG - Checking email configuration:")
+                print(f"  📧 User email: {user['email']}")
+                print(f"  📧 send_email_fn type: {type(send_email_fn)}")
+                print(f"  📧 send_email_fn callable: {callable(send_email_fn)}")
+                
+                # Try to inspect the function
+                if hasattr(send_email_fn, '__name__'):
+                    print(f"  📧 Function name: {send_email_fn.__name__}")
+                
+                # Check if it might be the lambda
+                if 'lambda' in str(send_email_fn):
+                    print(f"  ⚠️ WARNING: send_email_fn appears to be a lambda! This means smtp_configured() returned False")
+                
+                print(f"  📧 Attempting to send email now...")
+                # ========== DEBUG END ==========
+                
                 # Send HTML email
                 send_email_fn(
                     user["email"], 
                     f"🎯 Price Alert: {tracked_product.get('title', 'Product')[:50]}...", 
                     html_message,
-                    html=True  # You'll need to update email_service.py to support HTML
+                    html=True
                 )
                 await create_notification(tracked_product["user_id"], tracked_product["_id"], plain_message, "email", "sent")
-                print(f"  📧 HTML Email sent to {user['email']}")
+                print(f"  ✅📧 HTML Email sent successfully to {user['email']}")
+                
             except Exception as e:
                 await create_notification(tracked_product["user_id"], tracked_product["_id"], plain_message, "email", "failed")
-                print(f"  ❌ Email failed: {e}")
+                print(f"  ❌📧 Email failed: {e}")
+                print(f"  ❌📧 Error type: {type(e)}")
+                print(f"  ❌📧 Error details: {str(e)}")
+                print(f"  ❌📧 Traceback:")
+                traceback.print_exc()
 
         if alert.get("notify_once"):
             await db.alerts.update_one({"_id": alert["_id"]}, {"$set": {"has_notified_once": True}})
