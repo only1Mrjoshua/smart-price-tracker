@@ -1889,3 +1889,26 @@ select:hover {
     flex-direction: column;
   }
 }
+
+/* ==========================================================================
+   MODAL Z-INDEX FIX
+   ========================================================================== */
+
+/* Results modal - lower z-index */
+.req-modal {
+  z-index: 20000;
+}
+
+/* Confirmation modal - higher z-index */
+.confirmation-modal {
+  z-index: 25000 !important; /* Higher than results modal */
+}
+
+/* Ensure modal overlay also has proper z-index */
+.confirmation-modal__overlay {
+  z-index: 25001 !important;
+}
+
+.confirmation-modal__container {
+  z-index: 25002 !important;
+}
