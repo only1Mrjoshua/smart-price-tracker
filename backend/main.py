@@ -8,6 +8,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from datetime import datetime
 import asyncio
 import logging
+import os  # ADD THIS IMPORT
 
 from backend.config import settings
 from backend.db import ensure_indexes
@@ -48,9 +49,11 @@ async def startup():
     print("\n" + "="*60)
     print(f"🚀 SERVER STARTING AT {datetime.now()}")
     print(f"📊 CHECK_INTERVAL_MINUTES = {settings.CHECK_INTERVAL_MINUTES}")
+    # ADD THIS LINE to detect Render environment
+    print(f"🌍 Environment: {'Render' if os.getenv('RENDER') else 'Local'}")
     print("="*60)
     
-    # OPTION 1: Use APScheduler (working now)
+    # OPTION 1: Use APScheduler
     try:
         scheduler = AsyncIOScheduler()
         
@@ -80,10 +83,16 @@ async def startup():
         print(f"❌ APScheduler failed to start: {e}")
         scheduler = None
     
-    # OPTION 2: COMMENT OUT the backup task since APScheduler is working
-    # print("🔄 Starting backup background task...")
-    # background_task = asyncio.create_task(background_check_cycle())
-    # print("✅ Backup background task started")
+    # OPTION 2: ALWAYS start backup task on Render (CRITICAL FIX)
+    # On Render, we need the backup task to ensure the scheduler runs
+    if os.getenv('RENDER') or scheduler is None:
+        print("🔄 Render environment detected - starting backup background task...")
+        background_task = asyncio.create_task(background_check_cycle())
+        print("✅ Backup background task started")
+    else:
+        # On local, we can comment it out if APScheduler is working
+        print("🔄 Local environment - backup task not needed")
+        # background_task = asyncio.create_task(background_check_cycle())
     
     # OPTION 3: Run once immediately on startup
     print("⚡ Running immediate price check on startup...")
@@ -123,6 +132,7 @@ async def _job_wrapper():
 
 async def background_check_cycle():
     """Simple background task that runs every X minutes (backup for APScheduler)"""
+    print(f"🚀 Background task started with interval {settings.CHECK_INTERVAL_MINUTES} minutes")
     while True:
         try:
             # Wait for the interval
@@ -138,6 +148,8 @@ async def background_check_cycle():
             break
         except Exception as e:
             print(f"❌ [BACKGROUND] Error: {e}")
+            import traceback
+            traceback.print_exc()
             # Continue running despite errors
             continue
 
@@ -149,6 +161,7 @@ async def debug_scheduler():
         "background_task_running": background_task is not None and not background_task.done() if background_task else False,
         "check_interval_minutes": settings.CHECK_INTERVAL_MINUTES,
         "current_time": str(datetime.now()),
+        "environment": "Render" if os.getenv('RENDER') else "Local",
     }
     
     if scheduler and scheduler.running:
