@@ -391,10 +391,24 @@ async def run_check_cycle():
         status = tracked.get("status", "ok")
         last_checked = tracked.get("last_checked")
         
+        # Debug: Check what's coming from database
+        print(f"📦 Product {product_count}: status={status}, last_checked={last_checked}")
+        if last_checked:
+            print(f"   last_checked type: {type(last_checked)}, tzinfo: {last_checked.tzinfo}")
+        
         # Skip recently checked blocked products
         if status == "blocked" and last_checked:
+            # Debug before conversion
+            print(f"   Before ensure_aware: tzinfo={last_checked.tzinfo}")
+            
             last_checked_aware = ensure_aware(last_checked)
             cutoff = days_ago(1)
+            
+            # Debug after conversion
+            print(f"   After ensure_aware: tzinfo={last_checked_aware.tzinfo}")
+            print(f"   Cutoff: tzinfo={cutoff.tzinfo}")
+            
+            # This comparison should now work
             if last_checked_aware > cutoff:
                 print(f"⏭️ Skipping blocked product: {tracked.get('url')}")
                 blocked_count += 1
